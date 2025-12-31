@@ -436,6 +436,99 @@ if(isTouch){
   });
 }
 
+/* ================= Touch drag (Android) ================= */
+if(isTouch){
+  // Tránh xung đột HTML5 drag trên mobile
+  document.addEventListener("touchstart", e => {
+    const li = e.target.closest("li");
+    if(li) li.draggable = false;
+  }, {passive:true});
+
+  let tDragged = null;
+  let ghost = null;
+
+  function ensurePlaceholder(list){
+    if(!placeholder.parentElement) list.appendChild(placeholder);
+  }
+
+  function listFromPoint(x, y){
+    const el = document.elementFromPoint(x, y);
+    return el ? el.closest(".guest-list") : null;
+  }
+
+  document.addEventListener("touchstart", e => {
+    const li = e.target.closest(".guest-list li");
+    if(!li || li.classList.contains("drag-placeholder")) return;
+
+    tDragged = li;
+
+    const r = li.getBoundingClientRect();
+    ghost = li.cloneNode(true);
+    ghost.classList.add("touch-dragging");
+    ghost.style.left = `${r.left}px`;
+    ghost.style.top = `${r.top}px`;
+    ghost.style.width = `${r.width}px`;
+    document.body.appendChild(ghost);
+
+    li.classList.add("dragging");
+
+    const list = li.closest(".guest-list");
+    ensurePlaceholder(list);
+    list.insertBefore(placeholder, li.nextSibling);
+
+    e.preventDefault();
+  }, {passive:false});
+
+  document.addEventListener("touchmove", e => {
+    if(!tDragged || !ghost) return;
+
+    const t = e.touches[0];
+    ghost.style.left = `${t.clientX - ghost.offsetWidth / 2}px`;
+    ghost.style.top  = `${t.clientY - 16}px`;
+
+    const list = listFromPoint(t.clientX, t.clientY);
+    if(!list) return;
+
+    const after = getDragAfterElement(list, t.clientY);
+    after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
+
+    updateDropHints();
+    e.preventDefault();
+  }, {passive:false});
+
+  document.addEventListener("touchend", () => {
+    if(!tDragged) return;
+
+    const targetList = placeholder.closest(".guest-list");
+    if(targetList){
+      targetList.insertBefore(tDragged, placeholder);
+    }
+
+    placeholder.remove();
+    clearDropHints();
+
+    tDragged.classList.remove("dragging");
+    tDragged = null;
+
+    if(ghost){
+      ghost.remove();
+      ghost = null;
+    }
+
+    document.querySelectorAll(".table").forEach(updateTable);
+    saveState();
+  }, {passive:true});
+
+  document.addEventListener("touchcancel", () => {
+    if(ghost) ghost.remove();
+    ghost = null;
+    if(tDragged) tDragged.classList.remove("dragging");
+    tDragged = null;
+    placeholder.remove();
+    clearDropHints();
+  }, {passive:true});
+}
+
 /* ================= Drop hints ================= */
 function updateDropHints(){
   document.querySelectorAll(".table").forEach(t=>{
@@ -594,24 +687,59 @@ exportBtn.onclick = (e) => {
 };
 document.addEventListener("click", () => exportMenu.style.display = "none");
 
-/* ================= Print / PDF ================= */
+/* ================= Print / PDF (Android-safe via iframe) ================= */
 function sanitizeForPrint(root){
   root.querySelectorAll(".table-actions,.quick-add,.table-warning").forEach(el=>el.remove());
   root.querySelectorAll(".drag-placeholder").forEach(el=>el.remove());
+  // gỡ các nút xóa nếu đang ở delete mode
+  root.querySelectorAll(".delete-x").forEach(el=>el.remove());
+  root.querySelectorAll(".marked-delete").forEach(li=>li.classList.remove("marked-delete"));
 }
 
 function printHTML(html){
-  if(printRoot.style.display==="block") return;
-  printRoot.innerHTML = html;
-  printRoot.style.display = "block";
-  sanitizeForPrint(printRoot);
-  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  const cssText = document.querySelector("style") ? document.querySelector("style").innerHTML : "";
+
+  doc.open();
+  doc.write(`<!doctype html><html><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Print</title>
+    <style>${cssText}</style>
+    <style>
+      body{background:#fff}
+      .layout{display:none!important}
+      #print-root{display:block!important; position:static!important}
+      @media print{
+        @page{size:A4;margin:10mm}
+      }
+    </style>
+  </head><body>
+    <div id="print-root">${html}</div>
+  </body></html>`);
+  doc.close();
+
+  // sanitize trong iframe
+  sanitizeForPrint(doc.getElementById("print-root"));
+
+  // Android cần delay để layout xong trước khi print
+  setTimeout(() => {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+
+    // dọn iframe sau khi gọi print
+    setTimeout(() => iframe.remove(), 1000);
+  }, 400);
 }
 
-window.onafterprint = () => {
-  printRoot.style.display = "none";
-  printRoot.innerHTML = "";
-};
 
 /* ================= Export ================= */
 document.getElementById("export-csv").onclick = () => {
