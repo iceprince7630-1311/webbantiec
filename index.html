@@ -759,14 +759,16 @@ document.getElementById("export-pdf-all").onclick = () => {
   const wrapper = document.createElement("div");
 
   const unassignedBlock = document.createElement("div");
-  unassignedBlock.innerHTML = `
-    <h2>Chưa sắp xếp</h2>
-    <ul class="guest-list">
-      ${[...unassigned.querySelectorAll("li:not(.drag-placeholder)")]
-        .map(li => `<li>${guestNameFromLi(li)}</li>`).join("")}
-    </ul>
-    <hr>`;
-  wrapper.appendChild(unassignedBlock);
+unassignedBlock.style.pageBreakAfter = "always";   // 👈 DÒNG QUAN TRỌNG
+unassignedBlock.innerHTML = `
+  <h2>Chưa sắp xếp</h2>
+  <ul class="guest-list">
+    ${[...unassigned.querySelectorAll("li:not(.drag-placeholder)")]
+      .map(li => `<li>${guestNameFromLi(li)}</li>`).join("")}
+  </ul>
+`;
+wrapper.appendChild(unassignedBlock);
+
 
   document.querySelectorAll(".table").forEach(t => wrapper.appendChild(t.cloneNode(true)));
   printHTML(wrapper.innerHTML);
