@@ -265,6 +265,9 @@ function createGuestLi(name){
   li.textContent = clean;
   return li;
 }
+function stripQuotes(s){
+  return String(s || "").replace(/^"(.*)"$/, "$1").trim();
+}
 function guestNameFromLi(li){
   return li.dataset.name || normalizeName(li.textContent);
 }
@@ -918,12 +921,12 @@ function parseCSV(text){
   if(idxName === -1) return alert("CSV phải có cột 'Tên khách'");
 
   lines.slice(1).forEach(line => {
-    const cols = line.split(",").map(c => c.trim());
+    const cols = line.split(",").map(c => stripQuotes(c));
     const name = normalizeName(cols[idxName]);
     if(!name) return;
 
     if(idxTable !== -1 && cols[idxTable]){
-      const tableName = normalizeName(cols[idxTable]);
+      const tableName = normalizeName(stripQuotes(cols[idxTable]));
       let table = [...document.querySelectorAll(".table")]
         .find(t => t.dataset.baseName === tableName);
 
