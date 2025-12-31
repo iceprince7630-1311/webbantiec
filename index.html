@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sắp xếp bàn tiệc</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f6fb;color:#111}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:4fr 1.2fr;height:100vh;gap:12px;padding:12px}
+
+/* Toolbar */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:8px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;font-weight:bold}
+.btn:hover{background:#eee}
+#add-table{font-size:22px;background:#111;color:#fff;border:none}
+#clear-btn{border-color:#dc2626;color:#dc2626}
+#clear-btn:hover{background:#dc2626;color:#fff}
+
+/* Export */
+.export-menu{position:relative}
+.export-dropdown{
+  position:absolute;top:110%;left:0;
+  background:#fff;border:1px solid #ccc;border-radius:10px;
+  padding:6px;display:none;flex-direction:column;gap:4px;
+  z-index:10;min-width:200px
+}
+.export-dropdown button{text-align:left}
+
+/* Tables */
+.tables{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;overflow:auto;margin-top:10px}
+.table{background:#fff;border-radius:12px;padding:10px;border:1px solid #ddd;display:flex;flex-direction:column}
+.table.over{background:#fee2e2;border:2px solid #dc2626}
+
+.table-header{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.table-title{margin:0;font-size:15px;outline:none}
+.table-actions{display:flex;gap:4px}
+.table-actions button{padding:6px 8px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer}
+.table-actions button:hover{background:#eee}
+
+/* Guest list + numbering */
+.guest-list{
+  list-style:none;padding:6px;margin:8px 0;
+  border:2px dashed #ccc;min-height:80px;border-radius:8px;
+  counter-reset:guest;
+}
+.guest-list li{
+  background:#fff;border:1px solid #ccc;border-radius:6px;
+  padding:6px;margin-bottom:4px;cursor:grab;position:relative;
+  user-select:none;
+}
+.guest-list li:not(.drag-placeholder)::before{
+  counter-increment:guest;
+  content: counter(guest) ".";
+  display:inline-block;
+  min-width:28px;
+  margin-right:6px;
+  color:#555;
+  font-weight:bold;
+}
+
+/* Drag UI */
+.drag-placeholder{
+  height:32px;
+  margin-bottom:4px;
+  border:2px dashed #2563eb;
+  border-radius:6px;
+  background:rgba(37,99,235,.08);
+}
+.dragging{opacity:.4}
+
+/* Quick add */
+.quick-add{margin-top:4px}
+.quick-add input{width:100%;padding:6px;border-radius:6px;border:1px solid #ccc}
+.quick-add-hint{font-size:12px;color:#666;margin-top:2px}
+.quick-add.active input{border:2px solid #2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.15)}
+.hidden{display:none}
+
+/* Warning */
+.table-warning{margin-top:6px;padding:8px;border-radius:8px;background:#fee2e2;color:#991b1b;font-size:13px}
+.table-warning button{
+  margin-top:6px;padding:6px 10px;border-radius:6px;
+  border:1px solid #dc2626;background:#fff;color:#dc2626;
+  cursor:pointer;font-weight:bold
+}
+.table-warning button:hover{background:#dc2626;color:#fff}
+
+/* Sidebar */
+.sidebar{display:flex;flex-direction:column;gap:12px}
+.card{background:#fff;border-radius:12px;padding:10px;border:1px solid #ddd;display:flex;flex-direction:column;gap:8px}
+textarea{width:100%;height:120px;border-radius:8px;padding:8px}
+
+/* Delete mode */
+.delete-x{
+  position:absolute;
+  right:6px;
+  top:4px;
+  font-size:12px;
+  cursor:pointer;
+  color:#dc2626;
+  display:none;
+}
+.delete-mode li .delete-x{display:block}
+.marked-delete{opacity:.4;text-decoration:line-through}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-content{background:#fff;padding:16px;border-radius:14px;width:360px;max-width:90vw}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+
+/* Max list */
+#max-list{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.max-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.max-row label{font-weight:bold;flex:1}
+.max-row input{width:80px;padding:6px;border-radius:6px;border:1px solid #ccc;text-align:center}
+
+/* Print */
+@media print{
+  body{background:#fff}
+  .layout{display:none !important}
+  #print-root{display:block !important}
+  .table-actions,.quick-add,.table-warning,.delete-x{display:none !important}
+  @page{size:A4;margin:10mm}
+}
+
+/* Important: do NOT keep print root display:none permanently in print flow.
+   We show it before printing and hide after printing. */
+#print-root{
+  position:fixed;
+  inset:0;
+  background:#fff;
+  z-index:9999;
+  display:none;
+  overflow:auto;
+  padding:12px;
+}
+</style>
+<link type="text/css" rel="stylesheet" href="css/style.css"/>
+</head>
+
+<body>
+
+<div class="layout">
+
+  <div>
+    <div class="toolbar">
+      <button id="add-table">+</button>
+      <button id="adjust-max" class="btn">⚙️ Chỉnh max</button>
+
+      <button id="save-btn" class="btn">💾 Lưu</button>
+      <button id="clear-btn" class="btn">🧹 Xóa</button>
+
+      <div class="export-menu">
+        <button id="export-btn" class="btn">📤 Xuất</button>
+        <div id="export-menu" class="export-dropdown">
+          <button id="export-csv">📊 Excel (CSV)</button>
+          <button id="export-pdf-all">🖨️ PDF tất cả</button>
+          <button id="export-pdf-one">🧾 PDF 1 bàn</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tables" id="tables"></div>
+  </div>
+
+  <div class="sidebar">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+        <h3>Chưa sắp xếp</h3>
+        <div id="delete-controls">
+          <button id="delete-mode-btn" class="btn">🗑️</button>
+          <button id="delete-confirm-btn" class="btn hidden">✅</button>
+          <button id="delete-cancel-btn" class="btn hidden">❌</button>
+        </div>
+      </div>
+      <ul class="guest-list" id="unassigned"></ul>
+    </div>
+
+    <div class="card">
+      <h3>Thêm khách</h3>
+      <textarea id="guest-input" placeholder="Mỗi dòng là 1 tên..."></textarea>
+      <button id="add-guest" class="btn">Thêm</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL CHỈNH MAX -->
+<div class="modal" id="max-modal">
+  <div class="modal-content">
+    <h3>Chỉnh số khách tối đa</h3>
+    <div id="max-list"></div>
+    <div class="modal-actions">
+      <button id="max-cancel" class="btn">Hủy</button>
+      <button id="max-save" class="btn">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PDF 1 BÀN -->
+<div class="modal" id="pdf-one-modal">
+  <div class="modal-content">
+    <h3>Xuất PDF 1 bàn</h3>
+    <select id="pdf-table-select" style="width:100%;padding:8px;border-radius:8px"></select>
+    <div class="modal-actions">
+      <button id="pdf-one-cancel" class="btn">Hủy</button>
+      <button id="pdf-one-export" class="btn">Xuất</button>
+    </div>
+  </div>
+</div>
+
+<div id="print-root" aria-hidden="true"></div>
+
+<script>
+/* ================= DOM ================= */
+const tablesEl = document.getElementById("tables");
+const unassigned = document.getElementById("unassigned");
+const guestInput = document.getElementById("guest-input");
+
+const exportBtn = document.getElementById("export-btn");
+const exportMenu = document.getElementById("export-menu");
+
+const maxModal = document.getElementById("max-modal");
+const maxList = document.getElementById("max-list");
+
+const pdfOneModal = document.getElementById("pdf-one-modal");
+const pdfTableSelect = document.getElementById("pdf-table-select");
+
+const printRoot = document.getElementById("print-root");
+
+/* ================= State ================= */
+let deleteMode = false;
+
+/* ================= Helpers ================= */
+function normalizeName(s){ return String(s||"").trim().replace(/\s+/g," "); }
+
+function createGuestLi(name){
+  const clean = normalizeName(name);
+  const li = document.createElement("li");
+  li.draggable = true;
+  li.dataset.name = clean;
+  li.appendChild(document.createTextNode(clean));
+  return li;
+}
+
+function guestNameFromLi(li){
+  return li.dataset.name || normalizeName(li.childNodes?.[0]?.textContent || li.textContent);
+}
+
+/* ================= Table ================= */
+function createTable(name, max = 10, guests = []){
+  const table = document.createElement("div");
+  table.className = "table";
+  table.dataset.max = String(max);
+  table.dataset.baseName = normalizeName(name) || "Bàn";
+
+  table.innerHTML = `
+    <div class="table-header">
+      <h3 class="table-title"></h3>
+      <div class="table-actions">
+        <button class="quick-add-btn">➕</button>
+        <button class="edit-table-btn">✏️</button>
+        <button class="delete-table-btn">🗑️</button>
+      </div>
+    </div>
+
+    <div class="quick-add hidden">
+      <input class="quick-add-input" placeholder="Nhập tên khách..." />
+      <div class="quick-add-hint">Enter để hoàn thành · Esc để hủy</div>
+    </div>
+
+    <ul class="guest-list"></ul>
+    <div class="table-warning hidden"></div>
+  `;
+
+  const ul = table.querySelector(".guest-list");
+  guests.map(normalizeName).filter(Boolean).forEach(g => ul.appendChild(createGuestLi(g)));
+
+  tablesEl.appendChild(table);
+  updateTable(table);
+}
+
+function updateTable(table){
+  const list = table.querySelector(".guest-list");
+  const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
+  const max = parseInt(table.dataset.max, 10);
+  const name = normalizeName(table.dataset.baseName || "Bàn");
+  table.querySelector(".table-title").textContent = `${name} (${count}/${max})`;
+
+  const warning = table.querySelector(".table-warning");
+  if(count > max){
+    table.classList.add("over");
+    warning.innerHTML = `⚠️ Bàn đã dư người. Vui lòng điều chỉnh (${count-max}) người<br>
+      <button class="auto-fix-btn">Auto đưa về Chưa sắp xếp</button>`;
+    warning.classList.remove("hidden");
+  } else {
+    table.classList.remove("over");
+    warning.classList.add("hidden");
+    warning.innerHTML = "";
+  }
+}
+
+/* ================= Add ================= */
+document.getElementById("add-table").onclick = () => {
+  const count = document.querySelectorAll(".table").length;
+  createTable(`Bàn ${count + 1}`);
+  saveState();
+};
+
+document.getElementById("add-guest").onclick = () => {
+  guestInput.value
+    .split("\n")
+    .map(normalizeName)
+    .filter(Boolean)
+    .forEach(n => unassigned.appendChild(createGuestLi(n)));
+
+  guestInput.value = "";
+  saveState();
+};
+
+/* ================= Drag reorder with placeholder ================= */
+let draggedItem = null;
+const placeholder = document.createElement("li");
+placeholder.className = "drag-placeholder";
+
+function getDragAfterElement(container, y){
+  const items = [...container.querySelectorAll("li:not(.dragging):not(.drag-placeholder)")];
+  return items.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if(offset < 0 && offset > closest.offset){
+      return { offset, element: child };
+    }
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+}
+
+document.addEventListener("dragstart", e => {
+  if(e.target.tagName !== "LI") return;
+  if(e.target.classList.contains("drag-placeholder")) return;
+  draggedItem = e.target;
+  draggedItem.classList.add("dragging");
+  e.dataTransfer.setData("text/plain", "");
+});
+
+document.addEventListener("dragover", e => {
+  const list = e.target.closest(".guest-list");
+  if(!list || !draggedItem) return;
+  e.preventDefault();
+
+  const after = getDragAfterElement(list, e.clientY);
+  if(after == null) list.appendChild(placeholder);
+  else list.insertBefore(placeholder, after);
+});
+
+document.addEventListener("drop", e => {
+  const list = e.target.closest(".guest-list");
+  if(!list || !draggedItem) return;
+  e.preventDefault();
+
+  const table = list.closest(".table");
+  if(table){
+    const max = parseInt(table.dataset.max, 10);
+    const currentCount = list.querySelectorAll("li:not(.drag-placeholder)").length;
+    const movingBetweenLists = draggedItem.parentElement !== list;
+    if(movingBetweenLists && currentCount >= max){
+      alert("Bàn đã đủ người!");
+      placeholder.remove();
+      return;
+    }
+  }
+
+  list.insertBefore(draggedItem, placeholder);
+  placeholder.remove();
+  document.querySelectorAll(".table").forEach(updateTable);
+  saveState();
+});
+
+document.addEventListener("dragend", () => {
+  if(draggedItem) draggedItem.classList.remove("dragging");
+  placeholder.remove();
+  draggedItem = null;
+  document.querySelectorAll(".table").forEach(updateTable);
+  saveState();
+});
+
+/* ================= Quick add + actions ================= */
+function closeQuickAdd(box){
+  box.querySelector("input").value = "";
+  box.classList.add("hidden");
+  box.classList.remove("active");
+}
+
+tablesEl.addEventListener("click", e => {
+  const table = e.target.closest(".table");
+  if(!table) return;
+
+  if(e.target.classList.contains("quick-add-btn")){
+    const box = table.querySelector(".quick-add");
+    document.querySelectorAll(".quick-add.active").forEach(b => b !== box && closeQuickAdd(b));
+    box.classList.remove("hidden");
+    box.classList.add("active");
+    box.querySelector("input").focus();
+    return;
+  }
+
+  if(e.target.classList.contains("edit-table-btn")){
+    const t = table.querySelector(".table-title");
+    t.contentEditable = true;
+    t.focus();
+    document.execCommand("selectAll");
+    return;
+  }
+
+  if(e.target.classList.contains("delete-table-btn")){
+    if(!confirm("Xóa bàn này?")) return;
+    table.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => unassigned.appendChild(li));
+    table.remove();
+    saveState();
+    return;
+  }
+
+  if(e.target.classList.contains("auto-fix-btn")){
+    const max = parseInt(table.dataset.max, 10);
+    const list = table.querySelector(".guest-list");
+    [...list.querySelectorAll("li:not(.drag-placeholder)")].slice(max).forEach(li => unassigned.appendChild(li));
+    updateTable(table);
+    saveState();
+    return;
+  }
+});
+
+tablesEl.addEventListener("keydown", e => {
+  if(e.target.classList.contains("quick-add-input")){
+    const table = e.target.closest(".table");
+    const box = e.target.closest(".quick-add");
+
+    if(e.key === "Enter"){
+      e.preventDefault();
+      const name = normalizeName(e.target.value);
+      if(!name) return;
+
+      const list = table.querySelector(".guest-list");
+      const max = parseInt(table.dataset.max, 10);
+      const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
+      if(count >= max){
+        alert("Bàn đã đủ người!");
+        return;
+      }
+
+      list.appendChild(createGuestLi(name));
+      closeQuickAdd(box);
+      updateTable(table);
+      saveState();
+      return;
+    }
+
+    if(e.key === "Escape"){
+      e.preventDefault();
+      closeQuickAdd(box);
+      return;
+    }
+  }
+
+  if(e.target.classList.contains("table-title") && e.key === "Enter"){
+    e.preventDefault();
+    e.target.blur();
+  }
+});
+
+tablesEl.addEventListener("blur", e => {
+  if(!e.target.classList.contains("table-title")) return;
+  const table = e.target.closest(".table");
+  const raw = e.target.textContent.replace(/\s*\(\d+\/\d+\)\s*$/, "");
+  table.dataset.baseName = normalizeName(raw) || "Bàn";
+  e.target.contentEditable = false;
+  updateTable(table);
+  saveState();
+}, true);
+
+/* click outside: close quick-add only */
+document.addEventListener("click", e => {
+  document.querySelectorAll(".quick-add.active").forEach(box => {
+    const inside = box.contains(e.target);
+    const isBtn = e.target.closest(".quick-add-btn");
+    if(!inside && !isBtn) closeQuickAdd(box);
+  });
+});
+
+/* ================= Delete mode (✅/❌) ================= */
+const deleteBtn = document.getElementById("delete-mode-btn");
+const deleteConfirmBtn = document.getElementById("delete-confirm-btn");
+const deleteCancelBtn = document.getElementById("delete-cancel-btn");
+
+deleteBtn.onclick = () => {
+  deleteMode = true;
+  document.body.classList.add("delete-mode");
+  deleteBtn.classList.add("hidden");
+  deleteConfirmBtn.classList.remove("hidden");
+  deleteCancelBtn.classList.remove("hidden");
+
+  document.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => {
+    if(!li.querySelector(".delete-x")){
+      const x = document.createElement("span");
+      x.textContent = "✖";
+      x.className = "delete-x";
+      li.appendChild(x);
+    }
+    li.classList.remove("marked-delete");
+  });
+};
+
+deleteCancelBtn.onclick = () => {
+  deleteMode = false;
+  document.body.classList.remove("delete-mode");
+  deleteBtn.classList.remove("hidden");
+  deleteConfirmBtn.classList.add("hidden");
+  deleteCancelBtn.classList.add("hidden");
+
+  document.querySelectorAll(".delete-x").forEach(x => x.remove());
+  document.querySelectorAll(".marked-delete").forEach(li => li.classList.remove("marked-delete"));
+};
+
+deleteConfirmBtn.onclick = () => {
+  if(!confirm("Xóa các khách mời đã chọn?")) return;
+  document.querySelectorAll(".marked-delete").forEach(li => li.remove());
+  deleteCancelBtn.onclick();
+  document.querySelectorAll(".table").forEach(updateTable);
+  saveState();
+};
+
+document.addEventListener("click", e => {
+  if(!deleteMode) return;
+  if(e.target.classList.contains("delete-x")){
+    e.target.closest("li").classList.toggle("marked-delete");
+  }
+});
+
+/* ================= Adjust max ================= */
+document.getElementById("adjust-max").onclick = () => {
+  maxList.innerHTML = "";
+  document.querySelectorAll(".table").forEach((t,i) => {
+    const row = document.createElement("div");
+    row.className = "max-row";
+    row.innerHTML = `<label>${t.dataset.baseName}</label>
+      <input type="number" min="1" value="${t.dataset.max}" data-i="${i}">`;
+    maxList.appendChild(row);
+  });
+  maxModal.style.display = "flex";
+};
+
+document.getElementById("max-save").onclick = () => {
+  document.querySelectorAll("#max-list input").forEach(inp => {
+    const t = document.querySelectorAll(".table")[inp.dataset.i];
+    t.dataset.max = String(Math.max(1, parseInt(inp.value, 10) || 1));
+    updateTable(t);
+  });
+  maxModal.style.display = "none";
+  saveState();
+};
+
+document.getElementById("max-cancel").onclick = () => {
+  maxModal.style.display = "none";
+};
+
+/* ================= Export dropdown ================= */
+exportBtn.onclick = (e) => {
+  e.stopPropagation();
+  exportMenu.style.display = exportMenu.style.display === "flex" ? "none" : "flex";
+};
+
+document.addEventListener("click", () => {
+  exportMenu.style.display = "none";
+});
+
+/* ================= Export fixes (no duplicate / no blank) ================= */
+function sanitizeForPrint(root){
+  root.querySelectorAll(".table-actions,.quick-add,.table-warning,.delete-x").forEach(el => el.remove());
+  root.querySelectorAll(".drag-placeholder").forEach(el => el.remove());
+  root.querySelectorAll("li").forEach(li => li.classList.remove("marked-delete","dragging"));
+}
+
+function printHTML(html){
+  printRoot.innerHTML = html;
+  printRoot.style.display = "block";
+  printRoot.setAttribute("aria-hidden","false");
+
+  sanitizeForPrint(printRoot);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      window.print();
+    });
+  });
+}
+
+window.onafterprint = () => {
+  printRoot.style.display = "none";
+  printRoot.setAttribute("aria-hidden","true");
+  printRoot.innerHTML = "";
+};
+
+document.getElementById("export-csv").onclick = () => {
+  let csv = "Bàn,Tên khách\n";
+  document.querySelectorAll(".table").forEach(t => {
+    t.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => {
+      csv += `"${t.dataset.baseName}","${guestNameFromLi(li)}"\n`;
+    });
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+  a.download = "ban-tiec.csv";
+  a.click();
+};
+
+document.getElementById("export-pdf-all").onclick = () => {
+  const wrapper = document.createElement("div");
+
+  /* ----- Chưa sắp xếp ----- */
+  const unassignedBlock = document.createElement("div");
+  unassignedBlock.innerHTML = `
+    <h2 style="margin-bottom:8px">Chưa sắp xếp</h2>
+    <ul class="guest-list">
+      ${[...unassigned.querySelectorAll("li:not(.drag-placeholder)")]
+        .map(li => `<li>${guestNameFromLi(li)}</li>`)
+        .join("")}
+    </ul>
+    <hr style="margin:16px 0">
+  `;
+  wrapper.appendChild(unassignedBlock);
+
+  /* ----- Các bàn ----- */
+  document.querySelectorAll(".table").forEach(table => {
+    wrapper.appendChild(table.cloneNode(true));
+  });
+
+  printHTML(wrapper.innerHTML);
+};
+
+
+document.getElementById("export-pdf-one").onclick = () => {
+  pdfTableSelect.innerHTML = "";
+  document.querySelectorAll(".table").forEach((t,i) => {
+    const o = document.createElement("option");
+    o.value = i;
+    o.textContent = t.dataset.baseName;
+    pdfTableSelect.appendChild(o);
+  });
+  pdfOneModal.style.display = "flex";
+};
+
+document.getElementById("pdf-one-export").onclick = () => {
+  const t = document.querySelectorAll(".table")[pdfTableSelect.value];
+  pdfOneModal.style.display = "none";
+  printHTML(t.outerHTML);
+};
+
+document.getElementById("pdf-one-cancel").onclick = () => {
+  pdfOneModal.style.display = "none";
+};
+
+/* ================= Save/Clear ================= */
+document.getElementById("save-btn").onclick = () => {
+  saveState();
+  alert("Đã lưu!");
+};
+
+document.getElementById("clear-btn").onclick = () => {
+  if(confirm("Xóa toàn bộ dữ liệu?")){
+    localStorage.removeItem("wedding_state");
+    location.reload();
+  }
+};
+
+function saveState(){
+  const state = {
+    tables: [...document.querySelectorAll(".table")].map(t => ({
+      name: t.dataset.baseName,
+      max: t.dataset.max,
+      guests: [...t.querySelectorAll(".guest-list li:not(.drag-placeholder)")].map(li => guestNameFromLi(li))
+    })),
+    unassigned: [...unassigned.querySelectorAll("li:not(.drag-placeholder)")].map(li => guestNameFromLi(li))
+  };
+  localStorage.setItem("wedding_state", JSON.stringify(state));
+}
+
+(function load(){
+  const raw = localStorage.getItem("wedding_state");
+  if(!raw){
+    createTable("Bàn 1");
+    return;
+  }
+  const s = JSON.parse(raw);
+  s.tables.forEach(t => createTable(t.name, t.max, t.guests));
+  s.unassigned.forEach(n => unassigned.appendChild(createGuestLi(n)));
+  document.querySelectorAll(".table").forEach(updateTable);
+})();
+</script>
+
+<script type="text/javascript" src="js/script.js"></script>
+</body>
+</html>
+
+
