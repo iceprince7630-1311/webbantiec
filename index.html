@@ -118,7 +118,7 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
 .modal-content{background:#fff;padding:16px;border-radius:14px;width:360px;max-width:90vw}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 
-/* ===== PRINT – ANDROID SAFE (ĐÃ VÁ) ===== */
+/* Print */
 @media print{
   .layout{display:none!important}
   #print-root{display:block!important}
@@ -129,10 +129,8 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
   @page{size:A4;margin:10mm}
 }
 #print-root{
-  position:static;
-  background:#fff;
-  display:none;
-  padding:12px;
+  position:fixed;inset:0;background:#fff;z-index:9999;
+  display:none;overflow:auto;padding:12px
 }
 
 /* Mobile spacing */
@@ -142,7 +140,6 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
   .table{padding:12px}
 }
 
-/* Delete mode */
 .delete-x{
   position:absolute;
   right:6px;
@@ -154,6 +151,7 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
 }
 .delete-mode li .delete-x{display:block}
 .marked-delete{opacity:.4;text-decoration:line-through}
+
 </style>
 <link type="text/css" rel="stylesheet" href="css/style.css"/>
 </head>
@@ -190,13 +188,15 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
 <div class="sidebar">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-      <h3>Chưa sắp xếp</h3>
-      <div>
-        <button id="delete-mode-btn" class="btn">🗑️</button>
-        <button id="delete-confirm-btn" class="btn hidden">✅</button>
-        <button id="delete-cancel-btn" class="btn hidden">❌</button>
-      </div>
-    </div>
+  <h3>Chưa sắp xếp</h3>
+  <div>
+    <button id="delete-mode-btn" class="btn">🗑️</button>
+    <button id="delete-confirm-btn" class="btn hidden">✅</button>
+    <button id="delete-cancel-btn" class="btn hidden">❌</button>
+  </div>
+</div>
+
+
     <ul class="guest-list" id="unassigned"></ul>
   </div>
 
@@ -386,6 +386,56 @@ document.addEventListener("dragend", () => {
   clearDropHints();
 });
 
+/* ================= Touch drag ================= */
+if(isTouch){
+  let touchItem=null, touchClone=null, timer=null;
+
+  document.addEventListener("touchstart", e=>{
+    const li=e.target.closest(".guest-list li");
+    if(!li) return;
+    timer=setTimeout(()=>{
+      touchItem=li;
+      const r=li.getBoundingClientRect();
+      touchClone=li.cloneNode(true);
+      touchClone.classList.add("touch-dragging");
+      touchClone.style.width=r.width+"px";
+      document.body.appendChild(touchClone);
+      placeholder.style.height=r.height+"px";
+      li.parentElement.insertBefore(placeholder,li);
+      li.style.visibility="hidden";
+    },200);
+  },{passive:false});
+
+  document.addEventListener("touchmove", e=>{
+    if(timer){clearTimeout(timer);timer=null;}
+    if(!touchItem||!touchClone) return;
+    e.preventDefault();
+    const t=e.touches[0];
+    touchClone.style.left=t.clientX-touchClone.offsetWidth/2+"px";
+    touchClone.style.top=t.clientY-touchClone.offsetHeight/2+"px";
+    const el=document.elementFromPoint(t.clientX,t.clientY);
+    const list=el?.closest(".guest-list");
+    if(!list) return;
+    const after=getDragAfterElement(list,t.clientY);
+    after?list.insertBefore(placeholder,after):list.appendChild(placeholder);
+    updateDropHints();
+    if(t.clientY<80) window.scrollBy(0,-10);
+    if(window.innerHeight-t.clientY<80) window.scrollBy(0,10);
+  },{passive:false});
+
+  document.addEventListener("touchend", ()=>{
+    if(!touchItem) return;
+    placeholder.parentElement.insertBefore(touchItem,placeholder);
+    touchItem.style.visibility="";
+    placeholder.remove();
+    touchClone.remove();
+    touchItem=null;touchClone=null;
+    clearDropHints();
+    document.querySelectorAll(".table").forEach(updateTable);
+    saveState();
+  });
+}
+
 /* ================= Drop hints ================= */
 function updateDropHints(){
   document.querySelectorAll(".table").forEach(t=>{
@@ -401,13 +451,59 @@ function clearDropHints(){
   });
 }
 
-/* ================= Quick add / rename ================= */
+/* ================= Table actions ================= */
 function closeQuickAdd(box){
   box.querySelector("input").value="";
   box.classList.add("hidden");
   box.classList.remove("active");
 }
 
+tablesEl.addEventListener("click", e=>{
+  const table=e.target.closest(".table");
+  if(!table) return;
+
+  if(e.target.classList.contains("quick-add-btn")){
+    const box=table.querySelector(".quick-add");
+    document.querySelectorAll(".quick-add.active").forEach(b=>b!==box&&closeQuickAdd(b));
+    box.classList.remove("hidden");
+    box.classList.add("active");
+    box.querySelector("input").focus();
+    return;
+  }
+
+  if(e.target.classList.contains("edit-table-btn")){
+    const title = table.querySelector(".table-title");
+    title.contentEditable = true;
+    title.focus();
+    title.scrollIntoView({behavior:"smooth",block:"center"});
+    document.execCommand("selectAll");
+    return;
+  }
+
+  if(e.target.classList.contains("delete-table-btn")){
+    if(!confirm(`Xóa ${table.dataset.baseName}?\nToàn bộ khách sẽ chuyển về "Chưa sắp xếp".`)) return;
+    table.querySelectorAll(".guest-list li:not(.drag-placeholder)")
+      .forEach(li => unassigned.appendChild(li));
+    table.remove();
+    updateSummary();
+    saveState();
+    return;
+  }
+
+  if(e.target.classList.contains("auto-fix-btn")){
+    const max = parseInt(table.dataset.max, 10);
+    const list = table.querySelector(".guest-list");
+    const extra = list.querySelectorAll("li:not(.drag-placeholder)").length - max;
+    if(!confirm(`Đưa ${extra} khách dư về "Chưa sắp xếp"?`)) return;
+    [...list.querySelectorAll("li:not(.drag-placeholder)")].slice(max)
+      .forEach(li => unassigned.appendChild(li));
+    updateTable(table);
+    saveState();
+    return;
+  }
+});
+
+/* ================= Quick add / rename ================= */
 tablesEl.addEventListener("keydown", e => {
   if(e.target.classList.contains("quick-add-input")){
     const table = e.target.closest(".table");
@@ -469,8 +565,7 @@ document.getElementById("adjust-max").onclick = () => {
   maxList.innerHTML = "";
   document.querySelectorAll(".table").forEach((t,i) => {
     const row = document.createElement("div");
-    row.class
-    Name = "max-row";
+    row.className = "max-row";
     row.innerHTML = `<label>${t.dataset.baseName}</label>
       <input type="number" min="1" value="${t.dataset.max}" data-i="${i}">`;
     maxList.appendChild(row);
@@ -505,20 +600,16 @@ function sanitizeForPrint(root){
   root.querySelectorAll(".drag-placeholder").forEach(el=>el.remove());
 }
 
-/* ANDROID FIX: không dùng position:fixed + display:none để in */
 function printHTML(html){
+  if(printRoot.style.display==="block") return;
   printRoot.innerHTML = html;
-
-  // đảm bảo printRoot nằm trong DOM thật
-  if(!printRoot.parentElement) document.body.appendChild(printRoot);
-
+  printRoot.style.display = "block";
   sanitizeForPrint(printRoot);
-
-  // Android Chrome/WebView ổn định hơn với timeout nhỏ
-  setTimeout(() => window.print(), 300);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
 }
 
 window.onafterprint = () => {
+  printRoot.style.display = "none";
   printRoot.innerHTML = "";
 };
 
@@ -611,7 +702,6 @@ function saveState(){
   document.querySelectorAll(".table").forEach(updateTable);
 })();
 
-/* ================= Delete mode ================= */
 let deleteMode = false;
 
 const deleteBtn = document.getElementById("delete-mode-btn");
@@ -665,7 +755,10 @@ document.addEventListener("click", e => {
   if(e.target.classList.contains("delete-x")){
     e.target.closest("li").classList.toggle("marked-delete");
   }
+
+
 });
+
 </script>
 <script type="text/javascript" src="js/script.js"></script>
 </body>
