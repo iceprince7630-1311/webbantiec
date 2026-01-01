@@ -325,20 +325,7 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
 .hidden {
   display: none !important;
 }
-
-/* Khi sửa tên: tắt hoàn toàn mọi hành vi kéo trên Android */
-.editing-names .guest-list li {
-  touch-action: none !important;     /* Ngăn Android nhận gesture kéo */
-  -webkit-user-drag: none !important;
-  user-select: text !important;      /* Cho phép chọn & sửa */
-  cursor: text !important;           /* Không còn biểu tượng kéo */
-}
-
-/* Ngăn sự kiện kéo bị kích hoạt */
-.editing-names .guest-list li:active {
-  pointer-events: auto !important;
-}
-
+  
 /* -------------------------------------------------------------------------------------------------------------------------------------- */ 
 </style>
 
@@ -1300,131 +1287,82 @@ const editCancel = document.getElementById("edit-names-cancel");
 
 editBtn.onclick = () => {
   editNamesMode = true;
-
-  // Bật chế độ sửa tên
   document.body.classList.add("edit-names-mode");
-  document.body.classList.add("editing-names"); // ⭐ Android fix
 
   // Khóa toolbar
   document.getElementById("toolbar-blocker").style.display = "block";
+
 
   // Chỉ 3 nút sửa tên hoạt động
   editBtn.classList.add("hidden");
   editSave.classList.remove("hidden");
   editCancel.classList.remove("hidden");
 
-  // Lưu tên gốc + bật contentEditable + TẮT DRAG
+  // Lưu tên gốc
   originalNames.clear();
   document.querySelectorAll(".guest-list li").forEach(li => {
     originalNames.set(li, li.dataset.name);
     li.contentEditable = "true";
-
-    // ⭐ TẮT DRAG HOÀN TOÀN
-    li.draggable = false;
-    li.style.touchAction = "none"; // Android không nhận gesture kéo
   });
 
-  // ⭐ GỠ TOÀN BỘ LISTENER DRAG‑DROP (Android vẫn nhớ nếu không remove)
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    li.removeEventListener("touchstart", handleTouchStart, true);
-    li.removeEventListener("touchmove", handleTouchMove, true);
-    li.removeEventListener("dragstart", handleDragStart, true);
-  });
+  // Tắt kéo thả
+  document.querySelectorAll(".guest-list li").forEach(li => li.draggable = false);
 
-  // Cập nhật lại danh sách
+  // ⭐ CẬP NHẬT LẠI "CHƯA SẮP XẾP" THEO CHẾ ĐỘ SỬA TÊN
   updateUnassignedView();
 };
 
   
 editCancel.onclick = () => {
   editNamesMode = false;
-
-  // Tắt chế độ sửa tên
   document.body.classList.remove("edit-names-mode");
-  document.body.classList.remove("editing-names"); // ⭐ Android fix
 
   // Mở lại toolbar
   document.getElementById("toolbar-blocker").style.display = "none";
 
-  // Khôi phục tên cũ + tắt contentEditable
+  // Khôi phục tên cũ
   originalNames.forEach((oldName, li) => {
     li.dataset.name = oldName;
     li.textContent = oldName;
     li.contentEditable = "false";
   });
 
-  // Khôi phục nút
   editBtn.classList.remove("hidden");
   editSave.classList.add("hidden");
   editCancel.classList.add("hidden");
 
-  // ⭐ BẬT LẠI DRAG‑DROP CHO TẤT CẢ LI
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    li.draggable = true;
-
-    // ⭐ GẮN LẠI LISTENER DRAG‑DROP (Android cần cái này)
-    li.addEventListener("touchstart", handleTouchStart, true);
-    li.addEventListener("touchmove", handleTouchMove, true);
-    li.addEventListener("dragstart", handleDragStart, true);
-
-    // ⭐ Trả lại touch-action mặc định
-    li.style.touchAction = "";
-  });
+  document.querySelectorAll(".guest-list li").forEach(li => li.draggable = true);
 
   updateSummary();
 
-  // Rút gọn lại tên ở Chưa sắp xếp
+  // ⭐ QUAN TRỌNG: rút gọn lại tên ở Chưa sắp xếp
   updateUnassignedView();
 };
 
 
 editSave.onclick = () => {
   editNamesMode = false;
-
-  // Tắt chế độ sửa tên
   document.body.classList.remove("edit-names-mode");
-  document.body.classList.remove("editing-names"); // ⭐ Android fix
 
   // Mở lại toolbar
   document.getElementById("toolbar-blocker").style.display = "none";
 
-  // Lưu tên mới + tắt contentEditable
+  // Lưu tên mới
   document.querySelectorAll(".guest-list li").forEach(li => {
     const newName = normalizeName(li.textContent.trim());
     li.dataset.name = newName;
     li.textContent = newName;
     li.contentEditable = "false";
+    li.draggable = true;
   });
 
-  // Khôi phục nút
   editBtn.classList.remove("hidden");
   editSave.classList.add("hidden");
   editCancel.classList.add("hidden");
 
-  // ⭐ BẬT LẠI DRAG‑DROP CHO TẤT CẢ LI
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    li.draggable = true;
-
-    // ⭐ GẮN LẠI LISTENER DRAG‑DROP (Android cần cái này)
-    li.addEventListener("touchstart", handleTouchStart, true);
-    li.addEventListener("touchmove", handleTouchMove, true);
-    li.addEventListener("dragstart", handleDragStart, true);
-
-    // ⭐ Trả lại touch-action mặc định
-    li.style.touchAction = "";
-  });
-
-  // Cập nhật bàn + lưu
   document.querySelectorAll(".table").forEach(updateTable);
   saveState();
-
-  // Rút gọn lại tên ở Chưa sắp xếp
-  updateUnassignedView();
 };
-
-  document.addEventListener("dragstart", e => {
-  if (editNamesMode) e.preventDefault();
-});
 
 </script>
 <script type="text/javascript" src="js/script.js"></script>
