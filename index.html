@@ -367,6 +367,16 @@ function updateUnassignedView(){
   const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
   const count = items.length;
 
+  // ⭐ Nếu đang sửa tên → không rút gọn
+  if(editNamesMode){
+    items.forEach(li => li.textContent = li.dataset.name);
+    list.style.display = "block";
+    list.style.gridTemplateColumns = "";
+    list.style.maxHeight = "";
+    list.style.overflowY = "";
+    return;
+  }
+
   // Luôn reset về tên đầy đủ trước
   items.forEach(li => li.textContent = li.dataset.name);
 
@@ -477,6 +487,7 @@ document.getElementById("add-guest").onclick = () => {
     .forEach(n => unassigned.appendChild(createGuestLi(n)));
   guestInput.value = "";
   saveState();
+  updateUnassignedView();
 };
 
 /* ================= Drag & Drop desktop ================= */
