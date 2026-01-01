@@ -372,23 +372,31 @@ function updateUnassignedView(){
   items.forEach(li => li.textContent = li.dataset.name);
 
   // ⭐ Nếu đang sửa tên → KHÔNG rút gọn, nhưng vẫn chia cột
-  const shouldShorten = !editNamesMode;
+  if(editNamesMode){
+    // Giữ nguyên tên đầy đủ
+    // Nhưng vẫn áp dụng layout 2 cột nếu nhiều khách
+    if(count < 20){
+      list.style.display = "block";
+      list.style.gridTemplateColumns = "";
+      return;
+    }
+
+    list.style.display = "grid";
+    list.style.gridTemplateColumns = "repeat(2, 1fr)";
+    list.style.columnGap = "10px";
+    return;
+  }
 
   // Nếu dưới 20 khách → 1 cột
   if(count < 20){
     list.style.display = "block";
-    list.style.gridTemplateColumns = "";
-    list.style.maxHeight = "";
-    list.style.overflowY = "";
     return;
   }
 
   // ⭐ Chỉ rút gọn khi KHÔNG sửa tên
-  if(shouldShorten){
-    items.forEach(li => {
-      li.textContent = shortName(li.dataset.name);
-    });
-  }
+  items.forEach(li => {
+    li.textContent = shortName(li.dataset.name);
+  });
 
   // Luôn 2 cột
   list.style.display = "grid";
@@ -404,6 +412,7 @@ function updateUnassignedView(){
     list.style.overflowY = "";
   }
 }
+
   
 /* ================= Summary ================= */
 function updateSummary(){
@@ -1196,7 +1205,7 @@ editSave.onclick = () => {
 
   // Lưu tên mới
   document.querySelectorAll(".guest-list li").forEach(li => {
-    const newName = normalizeName(li.textContent);
+    const newName = normalizeName(li.textContent.trim());
     li.dataset.name = newName;
     li.textContent = newName;
     li.contentEditable = "false";
