@@ -315,8 +315,19 @@
       padding:12px
     }
 
-    .hidden {
+  .hidden {
   display: none !important;
+}
+    
+.print-page {
+  page-break-after: always;
+  padding: 20px;
+}
+
+.print-page h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 22px;
 }
 
   </style>
@@ -1199,63 +1210,101 @@ document.getElementById("export-csv").onclick = () => {
 };
 
 /* =======================
-   EXPORT PDF TẤT CẢ — BẢN FIX
+   EXPORT PDF TẤT CẢ — BẢN MỚI
    ======================= */
 
 document.getElementById("export-pdf-all").onclick = () => {
   exportMenu.style.display = "none";
 
   printRoot.innerHTML = "";
+  printRoot.style.display = "block";
 
-  document.querySelectorAll(".table").forEach((t, i) => {
-    const clone = t.cloneNode(true);
-    clone.style.pageBreakBefore = i === 0 ? "auto" : "always";
-    printRoot.appendChild(clone);
+  // 1) Trang đầu tiên: Chưa sắp xếp
+  const un = document.createElement("div");
+  un.className = "print-page";
+  un.innerHTML = `<h2>Chưa sắp xếp</h2>`;
+
+  const ul = document.createElement("ul");
+  ul.style.listStyle = "none";
+  ul.style.padding = "0";
+
+  [...unassigned.querySelectorAll("li:not(.drag-placeholder)")].forEach(li => {
+    const item = document.createElement("li");
+    item.textContent = li.dataset.name;
+    item.style.padding = "4px 0";
+    ul.appendChild(item);
   });
 
-  printRoot.style.display = "block";
+  un.appendChild(ul);
+  printRoot.appendChild(un);
+
+  // 2) Mỗi bàn = 1 trang
+  document.querySelectorAll(".table").forEach(t => {
+    const page = document.createElement("div");
+    page.className = "print-page";
+
+    const title = t.dataset.baseName;
+    page.innerHTML = `<h2>${title}</h2>`;
+
+    const list = document.createElement("ul");
+    list.style.listStyle = "none";
+    list.style.padding = "0";
+
+    [...t.querySelectorAll(".guest-list li:not(.drag-placeholder)")].forEach(li => {
+      const item = document.createElement("li");
+      item.textContent = li.dataset.name;
+      item.style.padding = "4px 0";
+      list.appendChild(item);
+    });
+
+    page.appendChild(list);
+    printRoot.appendChild(page);
+  });
+
   window.print();
+
   printRoot.style.display = "none";
   printRoot.innerHTML = "";
 };
 
+
 /* =======================
-   EXPORT PDF 1 BÀN — BẢN FIX
+   EXPORT PDF 1 BÀN — BẢN MỚI
    ======================= */
-
-document.getElementById("export-pdf-one").onclick = () => {
-  exportMenu.style.display = "none";
-
-  pdfTableSelect.innerHTML = "";
-  document.querySelectorAll(".table").forEach((t, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = t.dataset.baseName;
-    pdfTableSelect.appendChild(opt);
-  });
-
-  pdfOneModal.style.display = "flex";
-};
-
-document.getElementById("pdf-one-cancel").onclick = () => {
-  pdfOneModal.style.display = "none";
-};
 
 document.getElementById("pdf-one-export").onclick = () => {
   const index = pdfTableSelect.value;
   const table = document.querySelectorAll(".table")[index];
 
   printRoot.innerHTML = "";
-  const clone = table.cloneNode(true);
-  printRoot.appendChild(clone);
-
   printRoot.style.display = "block";
+
+  const page = document.createElement("div");
+  page.className = "print-page";
+
+  page.innerHTML = `<h2>${table.dataset.baseName}</h2>`;
+
+  const list = document.createElement("ul");
+  list.style.listStyle = "none";
+  list.style.padding = "0";
+
+  [...table.querySelectorAll(".guest-list li:not(.drag-placeholder)")].forEach(li => {
+    const item = document.createElement("li");
+    item.textContent = li.dataset.name;
+    item.style.padding = "4px 0";
+    list.appendChild(item);
+  });
+
+  page.appendChild(list);
+  printRoot.appendChild(page);
+
   window.print();
+
   printRoot.style.display = "none";
   printRoot.innerHTML = "";
-
   pdfOneModal.style.display = "none";
 };
+
 
 /* =======================
    THÊM BÀN
