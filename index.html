@@ -325,7 +325,15 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
 .hidden {
   display: none !important;
 }
-  
+
+/* Khi sửa tên: tắt hoàn toàn kéo‑thả trên Android */
+.editing-names .guest-list li {
+  touch-action: none !important;
+  -webkit-user-drag: none !important;
+  user-select: text !important;
+  cursor: text !important;
+}
+
 /* -------------------------------------------------------------------------------------------------------------------------------------- */ 
 </style>
 
@@ -1289,9 +1297,11 @@ editBtn.onclick = () => {
   editNamesMode = true;
   document.body.classList.add("edit-names-mode");
 
+  // ⭐ THÊM DÒNG NÀY — FIX ANDROID KHÔNG CHO KÉO KHI SỬA TÊN
+  document.body.classList.add("editing-names");
+
   // Khóa toolbar
   document.getElementById("toolbar-blocker").style.display = "block";
-
 
   // Chỉ 3 nút sửa tên hoạt động
   editBtn.classList.add("hidden");
@@ -1303,13 +1313,13 @@ editBtn.onclick = () => {
   document.querySelectorAll(".guest-list li").forEach(li => {
     originalNames.set(li, li.dataset.name);
     li.contentEditable = "true";
-    li.draggable = false;
+    li.draggable = false;   // tắt draggable
   });
 
-  // Tắt kéo thả
+  // Tắt kéo thả (dư nhưng không sao)
   document.querySelectorAll(".guest-list li").forEach(li => li.draggable = false);
 
-  // ⭐ CẬP NHẬT LẠI "CHƯA SẮP XẾP" THEO CHẾ ĐỘ SỬA TÊN
+  // Cập nhật lại danh sách
   updateUnassignedView();
 };
 
@@ -1317,7 +1327,10 @@ editBtn.onclick = () => {
 editCancel.onclick = () => {
   editNamesMode = false;
   document.body.classList.remove("edit-names-mode");
-
+  
+  // ⭐ THÊM DÒNG NÀY — FIX ANDROID CHO KÉO KHI XONG SỬA TÊN
+  document.body.classList.remove("editing-names");
+  
   // Mở lại toolbar
   document.getElementById("toolbar-blocker").style.display = "none";
 
@@ -1345,7 +1358,10 @@ editCancel.onclick = () => {
 editSave.onclick = () => {
   editNamesMode = false;
   document.body.classList.remove("edit-names-mode");
-
+  
+  // ⭐ THÊM DÒNG NÀY — FIX ANDROID CHO KÉO KHI XONG SỬA TÊN
+  document.body.classList.remove("editing-names");
+  
   // Mở lại toolbar
   document.getElementById("toolbar-blocker").style.display = "none";
 
@@ -1365,6 +1381,10 @@ editSave.onclick = () => {
   document.querySelectorAll(".table").forEach(updateTable);
   saveState();
 };
+
+  document.addEventListener("dragstart", e => {
+  if (editNamesMode) e.preventDefault();
+});
 
 </script>
 <script type="text/javascript" src="js/script.js"></script>
