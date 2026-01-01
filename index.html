@@ -620,12 +620,18 @@ function createGuestLi(name){
   li.dataset.name = clean;
   li.textContent = clean;
 
-  /* Windows: drag = true
-     Android: drag = false */
   li.draggable = !isAndroid;
+
+  if (isAndroid) {
+    li.style.userSelect = "none";
+    li.style.webkitUserSelect = "none";
+    li.style.webkitUserDrag = "none";
+    li.style.touchAction = "manipulation";
+  }
 
   return li;
 }
+
 
 /* Rút gọn tên (dùng cho danh sách dài) */
 function shortName(full){
@@ -820,14 +826,21 @@ if (!isAndroid) {
 
   /* Bắt đầu kéo */
   document.addEventListener("dragstart", e => {
-    if (e.target.tagName !== "LI") return;
+  // Android: chặn hoàn toàn drag
+  if (isAndroid) {
+    e.preventDefault();
+    return;
+  }
 
-    draggedItem = e.target;
-    draggedItem.classList.add("dragging");
+  if (e.target.tagName !== "LI") return;
 
-    /* Bắt buộc cho Firefox */
-    e.dataTransfer.setData("", "");
-  });
+  draggedItem = e.target;
+  draggedItem.classList.add("dragging");
+
+  /* Bắt buộc cho Firefox */
+  e.dataTransfer.setData("", "");
+});
+
 
   /* Khi kéo qua danh sách */
   document.addEventListener("dragover", e => {
@@ -1030,13 +1043,13 @@ if (isAndroid) {
     const li = e.target.closest("li");
     if (!li) return;
 
-    // Không chặn click khi sửa tên
     if (editNamesMode) return;
 
-    // Chỉ chặn drag mặc định
     li.draggable = false;
+    li.style.touchAction = "manipulation";
   }, { passive: true });
 }
+
 
 /* =======================
    BƯỚC 7 — DELETE MODE
@@ -1361,8 +1374,28 @@ document.getElementById("export-csv").onclick = () => {
    ======================= */
 document.getElementById("export-pdf-all").onclick = () => {
   exportMenu.style.display = "none";
+
+  // Dọn vùng in
+  printRoot.innerHTML = "";
+
+  // Tạo wrapper chứa tất cả bàn
+  const wrap = document.createElement("div");
+  wrap.className = "print-all-wrapper";
+
+  document.querySelectorAll(".table").forEach(t => {
+    wrap.appendChild(t.cloneNode(true));
+  });
+
+  printRoot.appendChild(wrap);
+  printRoot.style.display = "block";
+
   window.print();
+
+  // Dọn lại sau khi in
+  printRoot.innerHTML = "";
+  printRoot.style.display = "none";
 };
+
 
 /* =======================
    EXPORT PDF 1 BÀN
@@ -1459,6 +1492,86 @@ document.getElementById("pdf-one-export").onclick = () => {
     saveState();
   }
 });
+/* =======================
+   THÊM BÀN
+   ======================= */
+const addTableBtn = document.getElementById("add-table");
+
+if (addTableBtn) {
+  addTableBtn.onclick = () => {
+    const count = document.querySelectorAll(".table").length + 1;
+    createTable("Bàn " + count);
+    updateSummary();
+    saveState();
+  };
+}
+
+/* =======================
+   CHỈNH MAX
+   ======================= */
+const adjustMaxBtn = document.getElementById("adjust-max");
+
+if (adjustMaxBtn) {
+  adjustMaxBtn.onclick = () => {
+    maxList.innerHTML = "";
+
+    document.querySelectorAll(".table").forEach((t, i) => {
+      const row = document.createElement("div");
+      row.className = "max-row";
+      row.style.marginBottom = "8px";
+
+      const name = t.dataset.baseName || ("Bàn " + (i + 1));
+      const currentMax = t.dataset.max || "10";
+
+      row.innerHTML = `
+        <div style="margin-bottom:4px;font-weight:600">${name}</div>
+        <input type="number" class="max-input" data-index="${i}" value="${currentMax}"
+          style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc">
+      `;
+      maxList.appendChild(row);
+    });
+
+    maxModal.style.display = "flex";
+  };
+}
+
+// Nút Hủy trong modal max
+document.getElementById("max-cancel").onclick = () => {
+  maxModal.style.display = "none";
+};
+
+// Nút Lưu trong modal max
+document.getElementById("max-save").onclick = () => {
+  const inputs = maxList.querySelectorAll(".max-input");
+  const tables = document.querySelectorAll(".table");
+
+  inputs.forEach(inp => {
+    const idx = parseInt(inp.dataset.index, 10);
+    const val = parseInt(inp.value || "0", 10);
+    if (!val || val <= 0) return;
+
+    const table = tables[idx];
+    if (!table) return;
+
+    table.dataset.max = String(val);
+    updateTable(table);
+  });
+
+  // Chỉnh hàng loạt nếu có nhập
+  const bulk = document.getElementById("bulk-max");
+  if (bulk && bulk.value) {
+    const v = parseInt(bulk.value, 10);
+    if (v > 0) {
+      document.querySelectorAll(".table").forEach(t => {
+        t.dataset.max = String(v);
+        updateTable(t);
+      });
+    }
+  }
+
+  saveState();
+  maxModal.style.display = "none";
+};
 
   </script>
 </body>
