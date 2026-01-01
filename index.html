@@ -1178,8 +1178,12 @@ editBtn.onclick = () => {
 
   // Tắt kéo thả
   document.querySelectorAll(".guest-list li").forEach(li => li.draggable = false);
+
+  // ⭐ CẬP NHẬT LẠI "CHƯA SẮP XẾP" THEO CHẾ ĐỘ SỬA TÊN
+  updateUnassignedView();
 };
 
+  
 editCancel.onclick = () => {
   editNamesMode = false;
   document.body.classList.remove("edit-names-mode");
