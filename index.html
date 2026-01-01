@@ -152,6 +152,14 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
 .delete-mode li .delete-x{display:block}
 .marked-delete{opacity:.4;text-decoration:line-through}
 
+.edit-names-mode li {
+  cursor: text !important;
+  background: #fff7d6;
+}
+.edit-names-mode .guest-list li.dragging {
+  opacity: 1 !important;
+}
+  
 </style>
 <link type="text/css" rel="stylesheet" href="css/style.css"/>
 </head>
@@ -164,6 +172,11 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
   <div class="toolbar">
     <button id="add-table">+</button>
     <button id="adjust-max" class="btn">⚙️ Chỉnh max</button>
+    
+    <button id="edit-names-btn" class="btn">✏️ Sửa tên khách</button>
+    <button id="edit-names-save" class="btn hidden">💾 Áp dụng</button>
+    <button id="edit-names-cancel" class="btn hidden">❌ Hủy</button>
+
     <button id="save-btn" class="btn">💾 Lưu</button>
     <button id="clear-btn" class="btn">🧹 Xóa</button>
     <input type="file" id="import-csv" accept=".csv" hidden>
@@ -1015,6 +1028,79 @@ document.getElementById("help-btn").onclick = () => {
 };
 document.getElementById("help-close").onclick = () => {
   helpModal.style.display = "none";
+};
+
+/* ================= Edit Guest Names Mode ================= */
+
+let editNamesMode = false;
+let originalNames = new Map(); // lưu tên cũ để hủy
+
+const editBtn = document.getElementById("edit-names-btn");
+const editSave = document.getElementById("edit-names-save");
+const editCancel = document.getElementById("edit-names-cancel");
+
+editBtn.onclick = () => {
+  editNamesMode = true;
+  document.body.classList.add("edit-names-mode");
+
+  // Ẩn/hiện nút
+  editBtn.classList.add("hidden");
+  editSave.classList.remove("hidden");
+  editCancel.classList.remove("hidden");
+
+  // Lưu tên gốc
+  originalNames.clear();
+  document.querySelectorAll(".guest-list li").forEach(li => {
+    originalNames.set(li, li.dataset.name);
+    li.contentEditable = "true";
+  });
+
+  // Chặn kéo thả
+  document.querySelectorAll(".guest-list li").forEach(li => li.draggable = false);
+};
+
+editCancel.onclick = () => {
+  editNamesMode = false;
+  document.body.classList.remove("edit-names-mode");
+
+  // Khôi phục tên cũ
+  originalNames.forEach((oldName, li) => {
+    li.dataset.name = oldName;
+    li.textContent = oldName;
+    li.contentEditable = "false";
+  });
+
+  // Reset nút
+  editBtn.classList.remove("hidden");
+  editSave.classList.add("hidden");
+  editCancel.classList.add("hidden");
+
+  // Bật lại kéo thả
+  document.querySelectorAll(".guest-list li").forEach(li => li.draggable = true);
+
+  updateSummary();
+};
+
+editSave.onclick = () => {
+  editNamesMode = false;
+  document.body.classList.remove("edit-names-mode");
+
+  // Lưu tên mới
+  document.querySelectorAll(".guest-list li").forEach(li => {
+    const newName = normalizeName(li.textContent);
+    li.dataset.name = newName;
+    li.textContent = newName;
+    li.contentEditable = "false";
+    li.draggable = true;
+  });
+
+  // Reset nút
+  editBtn.classList.remove("hidden");
+  editSave.classList.add("hidden");
+  editCancel.classList.add("hidden");
+
+  document.querySelectorAll(".table").forEach(updateTable);
+  saveState();
 };
 
 </script>
