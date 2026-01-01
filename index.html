@@ -1369,13 +1369,29 @@ tablesEl.addEventListener("click", e => {
   if (!table) return;
 
   /* Xóa bàn */
-  if (e.target.classList.contains("delete-table-btn")) {
-    if (confirm("Xóa bàn này?")) {
-      table.remove();
-      updateSummary();
-      saveState();
-    }
+if (e.target.classList.contains("delete-table-btn")) {
+  if (confirm("Xóa bàn này?")) {
+
+    // 1) Lấy toàn bộ khách trong bàn
+    const guests = [...table.querySelectorAll(".guest-list li:not(.drag-placeholder)")];
+
+    // 2) Đưa từng khách về "Chưa sắp xếp"
+    guests.forEach(li => {
+      unassigned.appendChild(li);
+    });
+
+    // 3) Cập nhật giao diện
+    updateUnassignedView();
+
+    // 4) Xóa bàn
+    table.remove();
+
+    // 5) Cập nhật tổng & lưu
+    updateSummary();
+    saveState();
   }
+}
+
 
   /* Đổi tên bàn */
   if (e.target.classList.contains("edit-table-btn")) {
