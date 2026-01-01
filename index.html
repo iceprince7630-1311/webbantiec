@@ -432,6 +432,22 @@
       background: #ffe0b2 !important;
       border: 2px solid #ff9800 !important;
     }
+
+    .move-arrow {
+  display: none;
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  padding: 4px;
+  background: #eee;
+  border-radius: 6px;
+}
+li.selected-guest .move-arrow {
+  display: inline-block;
+}
+
   </style>
 </head>
 <body>
@@ -566,6 +582,15 @@
       </div>
     </div>
   </div>
+  
+  <div id="move-modal" class="modal">
+  <div class="modal-box">
+    <h3>Chọn bàn</h3>
+    <div id="move-list"></div>
+    <button id="move-cancel">Hủy</button>
+  </div>
+  </div>
+
 
   <div id="print-root"></div>
 
@@ -618,15 +643,26 @@ function createGuestLi(name){
   const clean = normalizeName(name);
   const li = document.createElement("li");
   li.dataset.name = clean;
-  li.textContent = clean;
 
+  // Bọc text trong span để tránh Chrome Android xóa chữ
+  const span = document.createElement("span");
+  span.className = "guest-name";
+  span.textContent = clean;
+  li.appendChild(span);
+
+  // Windows: cho drag
   li.draggable = !isAndroid;
 
+  // Android: chặn mọi hành vi gây mất chữ
   if (isAndroid) {
     li.style.userSelect = "none";
     li.style.webkitUserSelect = "none";
     li.style.webkitUserDrag = "none";
     li.style.touchAction = "manipulation";
+    const arrow = document.createElement("span");
+    arrow.className = "move-arrow";
+    arrow.textContent = "➡️";
+    li.appendChild(arrow);
   }
 
   return li;
@@ -987,11 +1023,10 @@ document.addEventListener("click", e => {
   if (!isAndroid) return;
 
   const li = e.target.closest(".guest-list li");
-  if (!li || li.classList.contains("drag-placeholder")) return;
+  if (!li) return;
 
   // Không chọn khi đang xóa hoặc sửa tên
-  if (deleteMode) return;
-  if (editNamesMode) return;
+  if (deleteMode || editNamesMode) return;
 
   // Bấm lại để bỏ chọn
   if (selectedGuest === li) {
@@ -1004,6 +1039,7 @@ document.addEventListener("click", e => {
   selectedGuest = li;
   li.classList.add("selected-guest");
 });
+
 
 /* Android: tap vào bàn để đưa khách vào bàn */
 tablesEl.addEventListener("click", e => {
@@ -1043,13 +1079,19 @@ if (isAndroid) {
     const li = e.target.closest("li");
     if (!li) return;
 
+    // Không chặn khi đang sửa tên
     if (editNamesMode) return;
 
+    // Tắt drag hoàn toàn
     li.draggable = false;
+
+    // Ngăn Chrome Android tạo ghost-drag & mất chữ
+    li.style.userSelect = "none";
+    li.style.webkitUserSelect = "none";
+    li.style.webkitUserDrag = "none";
     li.style.touchAction = "manipulation";
   }, { passive: true });
 }
-
 
 /* =======================
    BƯỚC 7 — DELETE MODE
@@ -1571,6 +1613,33 @@ document.getElementById("max-save").onclick = () => {
 
   saveState();
   maxModal.style.display = "none";
+};
+/* =======================
+   NÚT MOVE KHÁCH
+   ======================= */
+function openMoveGuestModal(li){
+  const box = document.getElementById("move-list");
+  box.innerHTML = "";
+
+  document.querySelectorAll(".table").forEach((t, i) => {
+    const btn = document.createElement("button");
+    btn.textContent = t.dataset.baseName;
+    btn.onclick = () => {
+      t.querySelector(".guest-list").appendChild(li);
+      clearSelectedGuest();
+      document.getElementById("move-modal").style.display = "none";
+      document.querySelectorAll(".table").forEach(updateTable);
+      saveState();
+      updateUnassignedView();
+    };
+    box.appendChild(btn);
+  });
+
+  document.getElementById("move-modal").style.display = "flex";
+}
+
+document.getElementById("move-cancel").onclick = () => {
+  document.getElementById("move-modal").style.display = "none";
 };
 
   </script>
