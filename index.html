@@ -1027,12 +1027,16 @@ tablesEl.addEventListener("click", e => {
 if (isAndroid) {
   document.addEventListener("touchstart", e => {
     const li = e.target.closest("li");
-    if (li) {
-      li.draggable = false;
-      e.preventDefault(); // Ngăn Chrome Android kích hoạt drag nội bộ
-    }
-  }, { passive: false });
+    if (!li) return;
+
+    // Không chặn click khi sửa tên
+    if (editNamesMode) return;
+
+    // Chỉ chặn drag mặc định
+    li.draggable = false;
+  }, { passive: true });
 }
+
 /* =======================
    BƯỚC 7 — DELETE MODE
    ======================= */
@@ -1131,54 +1135,62 @@ editBtn.onclick = () => {
 };
 
 editCancel.onclick = () => {
-  editNamesMode = false;
-  document.body.classList.remove("edit-names-mode");
-
-  document.getElementById("toolbar-blocker").style.display = "none";
-
-  // Khôi phục tên cũ
+  // 1) Khôi phục tên cũ trước
   originalNames.forEach((oldName, li) => {
     li.dataset.name = oldName;
     li.textContent = oldName;
     li.contentEditable = "false";
   });
 
-  editBtn.classList.remove("hidden");
-  editSave.classList.add("hidden");
-  editCancel.classList.add("hidden");
+  // 2) Tắt chế độ sửa
+  editNamesMode = false;
+  document.body.classList.remove("edit-names-mode");
+  document.getElementById("toolbar-blocker").style.display = "none";
 
-  // Khôi phục draggable
+  // 3) Khôi phục draggable
   document.querySelectorAll(".guest-list li").forEach(li => {
     li.draggable = !isAndroid;
   });
 
-  updateSummary();
+  // 4) Khôi phục nút
+  editBtn.classList.remove("hidden");
+  editSave.classList.add("hidden");
+  editCancel.classList.add("hidden");
+
+  // 5) Cập nhật giao diện
+  document.querySelectorAll(".table").forEach(updateTable);
   updateUnassignedView();
 };
-
 editSave.onclick = () => {
-  editNamesMode = false;
-  document.body.classList.remove("edit-names-mode");
-
-  document.getElementById("toolbar-blocker").style.display = "none";
-
-  // Lưu tên mới
+  // 1) Lưu tên mới trước
   document.querySelectorAll(".guest-list li").forEach(li => {
     const newName = normalizeName(li.textContent.trim());
     li.dataset.name = newName;
     li.textContent = newName;
     li.contentEditable = "false";
+  });
+
+  // 2) Tắt chế độ sửa
+  editNamesMode = false;
+  document.body.classList.remove("edit-names-mode");
+  document.getElementById("toolbar-blocker").style.display = "none";
+
+  // 3) Khôi phục draggable
+  document.querySelectorAll(".guest-list li").forEach(li => {
     li.draggable = !isAndroid;
   });
 
+  // 4) Khôi phục nút
   editBtn.classList.remove("hidden");
   editSave.classList.add("hidden");
   editCancel.classList.add("hidden");
 
+  // 5) Cập nhật giao diện
   document.querySelectorAll(".table").forEach(updateTable);
   saveState();
   updateUnassignedView();
 };
+
 /* =======================
    BƯỚC 8 — SAVE / LOAD
    ======================= */
@@ -1316,6 +1328,76 @@ document.getElementById("help-btn").onclick = () => {
 document.getElementById("help-close").onclick = () => {
   helpModal.style.display = "none";
 };
+
+/* =======================
+   EXPORT CSV
+   ======================= */
+document.getElementById("export-csv").onclick = () => {
+  exportMenu.style.display = "none";
+
+  let rows = [["Tên khách", "Bàn"]];
+  document.querySelectorAll(".table").forEach(t => {
+    const tableName = t.dataset.baseName;
+    t.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => {
+      rows.push([li.dataset.name, tableName]);
+    });
+  });
+
+  unassigned.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
+    rows.push([li.dataset.name, ""]);
+  });
+
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "danhsach.csv";
+  a.click();
+};
+
+/* =======================
+   EXPORT PDF TẤT CẢ
+   ======================= */
+document.getElementById("export-pdf-all").onclick = () => {
+  exportMenu.style.display = "none";
+  window.print();
+};
+
+/* =======================
+   EXPORT PDF 1 BÀN
+   ======================= */
+document.getElementById("export-pdf-one").onclick = () => {
+  exportMenu.style.display = "none";
+
+  pdfTableSelect.innerHTML = "";
+  document.querySelectorAll(".table").forEach((t, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = t.dataset.baseName;
+    pdfTableSelect.appendChild(opt);
+  });
+
+  pdfOneModal.style.display = "flex";
+};
+
+document.getElementById("pdf-one-cancel").onclick = () => {
+  pdfOneModal.style.display = "none";
+};
+
+document.getElementById("pdf-one-export").onclick = () => {
+  const index = pdfTableSelect.value;
+  const table = document.querySelectorAll(".table")[index];
+
+  printRoot.innerHTML = "";
+  printRoot.appendChild(table.cloneNode(true));
+  printRoot.style.display = "block";
+
+  window.print();
+
+  printRoot.style.display = "none";
+  pdfOneModal.style.display = "none";
+};
+
   </script>
 </body>
 </html>
