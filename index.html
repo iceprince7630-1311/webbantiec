@@ -1165,7 +1165,7 @@ document.addEventListener("click", e => {
   if (
     !exportMenu.contains(e.target) &&
     e.target !== exportBtn &&
-    !e.target.closest("#help-btn")
+    e.target.id !== "help-btn" && !e.target.closest(".modal")
   ) {
     exportMenu.style.display = "none";
   }
@@ -1426,6 +1426,18 @@ tablesEl.addEventListener("click", e => {
     saveState();
   }
 });
+/* =======================
+   HƯỚNG DẪN
+   ======================= */
+
+document.getElementById("help-btn").onclick = () => {
+  document.getElementById("help-modal").style.display = "flex";
+};
+
+document.getElementById("help-close").onclick = () => {
+  document.getElementById("help-modal").style.display = "none";
+};
+
 </script>
 
 </body>
