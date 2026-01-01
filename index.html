@@ -337,6 +337,7 @@ const pdfTableSelect = document.getElementById("pdf-table-select");
 
 const isTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
 
+let editNamesMode = false;
 /* ================= Helpers ================= */
 function normalizeName(s){ return String(s||"").trim().replace(/\s+/g," "); }
 function createGuestLi(name){
@@ -370,7 +371,7 @@ function updateUnassignedView(){
   // Luôn reset về tên đầy đủ trước
   items.forEach(li => li.textContent = li.dataset.name);
 
-  // ⭐ Nếu đang sửa tên → KHÔNG rút gọn, nhưng vẫn chia cột bình thường
+  // ⭐ Nếu đang sửa tên → KHÔNG rút gọn, nhưng vẫn chia cột
   const shouldShorten = !editNamesMode;
 
   // Nếu dưới 20 khách → 1 cột
@@ -1133,7 +1134,6 @@ document.getElementById("help-close").onclick = () => {
 
 /* ================= Edit Guest Names Mode ================= */
 
-let editNamesMode = false;
 let originalNames = new Map();
 
 const editBtn = document.getElementById("edit-names-btn");
