@@ -326,12 +326,17 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
   display: none !important;
 }
 
-/* Khi sửa tên: tắt hoàn toàn kéo‑thả trên Android */
+/* Khi sửa tên: tắt hoàn toàn mọi hành vi kéo trên Android */
 .editing-names .guest-list li {
-  touch-action: none !important;
+  touch-action: none !important;     /* Ngăn Android nhận gesture kéo */
   -webkit-user-drag: none !important;
-  user-select: text !important;
-  cursor: text !important;
+  user-select: text !important;      /* Cho phép chọn & sửa */
+  cursor: text !important;           /* Không còn biểu tượng kéo */
+}
+
+/* Ngăn sự kiện kéo bị kích hoạt */
+.editing-names .guest-list li:active {
+  pointer-events: auto !important;
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------- */ 
@@ -1380,6 +1385,9 @@ editSave.onclick = () => {
 
   document.querySelectorAll(".table").forEach(updateTable);
   saveState();
+  
+  // ⭐ QUAN TRỌNG: rút gọn lại tên ở Chưa sắp xếp
+  updateUnassignedView();
 };
 
   document.addEventListener("dragstart", e => {
