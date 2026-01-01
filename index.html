@@ -1,1400 +1,1378 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8">
-<title>Sắp xếp bàn tiệc</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <title>Sắp xếp bàn tiệc</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f6fb;color:#111}
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f6fb;color:#111}
 
-/* Layout */
-.layout{display:grid;grid-template-columns:4fr 1.2fr;height:100vh;gap:12px;padding:12px}
+    /* Layout */
+    .layout{
+      display:grid;
+      grid-template-columns:4fr 1.2fr;
+      height:100vh;
+      gap:12px;
+      padding:12px
+    }
 
-/* Toolbar */
-.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.btn{padding:8px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;font-weight:bold}
-.btn:hover{background:#eee}
-#add-table{font-size:22px;background:#111;color:#fff;border:none}
-#clear-btn{border-color:#dc2626;color:#dc2626}
-#clear-btn:hover{background:#dc2626;color:#fff}
+    /* Toolbar */
+    .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn{
+      padding:8px 12px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      background:#fff;
+      cursor:pointer;
+      font-weight:bold
+    }
+    .btn:hover{background:#eee}
+    #add-table{font-size:22px;background:#111;color:#fff;border:none}
+    #clear-btn{border-color:#dc2626;color:#dc2626}
+    #clear-btn:hover{background:#dc2626;color:#fff}
 
-/* Summary */
-#summary{margin-left:auto;font-weight:bold}
+    /* Summary */
+    #summary{margin-left:auto;font-weight:bold}
 
-/* Export */
-.export-menu{position:relative}
-.export-dropdown{
-  position:absolute;top:110%;left:0;
-  background:#fff;border:1px solid #ccc;border-radius:10px;
-  padding:6px;display:none;flex-direction:column;gap:4px;
-  z-index:10;min-width:200px
-}
-.export-dropdown button{text-align:left}
+    /* Export */
+    .export-menu{position:relative}
+    .export-dropdown{
+      position:absolute;top:110%;left:0;
+      background:#fff;border:1px solid #ccc;border-radius:10px;
+      padding:6px;display:none;flex-direction:column;gap:4px;
+      z-index:10;min-width:200px
+    }
+    .export-dropdown button{text-align:left}
 
-/* Tables */
-.tables{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;overflow:auto;margin-top:10px}
-.table{background:#fff;border-radius:12px;padding:10px;border:1px solid #ddd;display:flex;flex-direction:column}
-.table.over{background:#fee2e2;border:2px solid #dc2626}
+    /* Tables */
+    .tables{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+      gap:12px;
+      overflow:auto;
+      margin-top:10px
+    }
+    .table{
+      background:#fff;
+      border-radius:12px;
+      padding:10px;
+      border:1px solid #ddd;
+      display:flex;
+      flex-direction:column
+    }
+    .table.over{background:#fee2e2;border:2px solid #dc2626}
 
-/* Color accents */
-.table:nth-child(4n+1){border-top:4px solid #2563eb}
-.table:nth-child(4n+2){border-top:4px solid #16a34a}
-.table:nth-child(4n+3){border-top:4px solid #f59e0b}
-.table:nth-child(4n+4){border-top:4px solid #dc2626}
+    /* Color accents */
+    .table:nth-child(4n+1){border-top:4px solid #2563eb}
+    .table:nth-child(4n+2){border-top:4px solid #16a34a}
+    .table:nth-child(4n+3){border-top:4px solid #f59e0b}
+    .table:nth-child(4n+4){border-top:4px solid #dc2626}
 
-.table-header{display:flex;justify-content:space-between;align-items:center;gap:6px;padding-bottom:6px;border-bottom:1px solid #eee}
-.table-title{margin:0;font-size:15px;outline:none}
-.table-actions{display:flex;gap:4px}
-.table-actions button{padding:6px 8px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer}
+    .table-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:6px;
+      padding-bottom:6px;
+      border-bottom:1px solid #eee
+    }
+    .table-title{margin:0;font-size:15px;outline:none}
+    .table-actions{display:flex;gap:4px}
+    .table-actions button{
+      padding:6px 8px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      background:#fff;
+      cursor:pointer
+    }
 
-/* Guest list */
-.guest-list{
-  list-style:none;padding:6px;margin:8px 0;
-  border:2px dashed #ccc;min-height:80px;border-radius:8px;
-  counter-reset:guest;
-}
-.guest-list li{
-  background:#fff;border:1px solid #ccc;border-radius:6px;
-  padding:6px;margin-bottom:4px;cursor:grab;position:relative;
-  user-select:none;
-}
-.guest-list li:not(.drag-placeholder)::before{
-  counter-increment:guest;
-  content: counter(guest) ".";
-  display:inline-block;
-  min-width:28px;
-  margin-right:6px;
-  color:#555;
-  font-weight:bold;
-}
+    /* Guest list */
+    .guest-list{
+      list-style:none;
+      padding:6px;
+      margin:8px 0;
+      border:2px dashed #ccc;
+      min-height:80px;
+      border-radius:8px;
+      counter-reset:guest;
+    }
+    .guest-list li{
+      background:#fff;
+      border:1px solid #ccc;
+      border-radius:6px;
+      padding:6px;
+      margin-bottom:4px;
+      cursor:grab;
+      position:relative;
+      user-select:none;
+    }
+    .guest-list li:not(.drag-placeholder)::before{
+      counter-increment:guest;
+      content: counter(guest) ".";
+      display:inline-block;
+      min-width:28px;
+      margin-right:6px;
+      color:#555;
+      font-weight:bold;
+    }
 
-/* Drag UI */
-.drag-placeholder{
-  height:32px;
-  margin-bottom:4px;
-  border:2px dashed #2563eb;
-  border-radius:6px;
-  background:rgba(37,99,235,.08);
-}
-.dragging{opacity:.4}
+    /* Drag UI */
+    .drag-placeholder{
+      height:32px;
+      margin-bottom:4px;
+      border:2px dashed #2563eb;
+      border-radius:6px;
+      background:rgba(37,99,235,.08);
+    }
+    .dragging{opacity:.4}
 
-/* Touch drag */
-@media (pointer: coarse){
-  .guest-list li{touch-action:none}
-}
-.touch-dragging{
-  position:fixed;
-  z-index:10000;
-  pointer-events:none;
-  opacity:.85;
-  transform:scale(1.05);
-  box-shadow:0 8px 20px rgba(0,0,0,.25);
-  background:#fef3c7;
-}
+    /* Touch drag */
+    @media (pointer: coarse){
+      .guest-list li{touch-action:none}
+    }
+    .touch-dragging{
+      position:fixed;
+      z-index:10000;
+      pointer-events:none;
+      opacity:.85;
+      transform:scale(1.05);
+      box-shadow:0 8px 20px rgba(0,0,0,.25);
+      background:#fef3c7;
+    }
 
-/* Drop hints */
-.table.can-drop{outline:3px solid #16a34a}
-.table.cannot-drop{outline:3px solid #dc2626}
+    /* Drop hints */
+    .table.can-drop{outline:3px solid #16a34a}
+    .table.cannot-drop{outline:3px solid #dc2626}
 
-/* Warning */
-.table-warning{margin-top:6px;padding:8px;border-radius:8px;background:#fee2e2;color:#991b1b;font-size:13px}
+    /* Warning */
+    .table-warning{
+      margin-top:6px;
+      padding:8px;
+      border-radius:8px;
+      background:#fee2e2;
+      color:#991b1b;
+      font-size:13px
+    }
 
-/* Sidebar layout */
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  overflow: hidden;
-}
+    /* Sidebar layout */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+      overflow: hidden;
+    }
 
-/* CHƯA SẮP XẾP */
-#unassigned-wrapper {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 6px;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  display: flex;
-  flex-direction: column;
-}
+    /* CHƯA SẮP XẾP */
+    #unassigned-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+    }
 
-#unassigned-wrapper-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-  background: #fafafa;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
+    #unassigned-wrapper-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      background: #fafafa;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
 
-#unassigned {
-  padding: 10px;
-  margin: 0;
-  flex: 1;
-}
+    #unassigned {
+      padding: 10px;
+      margin: 0;
+      flex: 1;
+    }
 
-/* THÊM KHÁCH (sticky bottom) */
-.quick-add {
-  position: sticky;
-  bottom: 0;
-  background: #fff;
-  z-index: 1999;
-  border-top: 1px solid #ddd;
-  padding-top: 14px;
-  padding-bottom: 14px;
-}
+    /* THÊM KHÁCH (sticky bottom – bản cũ, sẽ override sau) */
+    .quick-add {
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+      z-index: 1999;
+      border-top: 1px solid #ddd;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
 
-textarea{width:100%;height:120px;border-radius:8px;padding:8px}
+    textarea{
+      width:100%;
+      height:120px;
+      border-radius:8px;
+      padding:8px
+    }
 
-/* Modal */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:100}
-.modal-content{background:#fff;padding:16px;border-radius:14px;width:360px;max-width:90vw}
-.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+    /* Modal */
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.4);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:100
+    }
+    .modal-content{
+      background:#fff;
+      padding:16px;
+      border-radius:14px;
+      width:360px;
+      max-width:90vw
+    }
+    .modal-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      margin-top:14px
+    }
 
-/* Print */
-@media print{
-  .layout{display:none!important}
-  #print-root{display:block!important}
-  .table-actions,.quick-add,.table-warning{display:none!important}
-  .table{page-break-inside:avoid}
-  .table + .table{page-break-before:always}
-  .table-title{font-size:18px}
-  @page{size:A4;margin:10mm}
-}
-#print-root{
-  position:fixed;inset:0;background:#fff;z-index:9999;
-  display:none;overflow:auto;padding:12px
-}
+    /* Print */
+    @media print{
+      .layout{display:none!important}
+      #print-root{display:block!important}
+      .table-actions,.quick-add,.table-warning{display:none!important}
+      .table{page-break-inside:avoid}
+      .table + .table{page-break-before:always}
+      .table-title{font-size:18px}
+      @page{size:A4;margin:10mm}
+    }
+    #print-root{
+      position:fixed;
+      inset:0;
+      background:#fff;
+      z-index:9999;
+      display:none;
+      overflow:auto;
+      padding:12px
+    }
 
-/* Mobile spacing */
-@media (max-width:768px){
-  .btn{padding:10px 14px}
-  #add-table{font-size:26px}
-  .table{padding:12px}
-}
+    /* Mobile spacing */
+    @media (max-width:768px){
+      .btn{padding:10px 14px}
+      #add-table{font-size:26px}
+      .table{padding:12px}
+    }
 
-.delete-x{
-  position:absolute;
-  right:6px;
-  top:4px;
-  font-size:12px;
-  cursor:pointer;
-  color:#dc2626;
-  display:none;
-}
-.delete-mode li .delete-x{display:block}
-.marked-delete{opacity:.4;text-decoration:line-through}
+    .delete-x{
+      position:absolute;
+      right:6px;
+      top:4px;
+      font-size:12px;
+      cursor:pointer;
+      color:#dc2626;
+      display:none;
+    }
+    .delete-mode li .delete-x{display:block}
+    .marked-delete{opacity:.4;text-decoration:line-through}
 
-.edit-names-mode li {
-  cursor: text !important;
-  background: #fff7d6;
-}
-.edit-names-mode .guest-list li.dragging {
-  opacity: 1 !important;
-}
+    .edit-names-mode li {
+      cursor: text !important;
+      background: #fff7d6;
+    }
+    .edit-names-mode .guest-list li.dragging {
+      opacity: 1 !important;
+    }
 
-#toolbar-blocker {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 76.67%;
-  height: 55px;
-  background: rgba(255,255,255,0.5);
-  backdrop-filter: blur(2px);
-  z-index: 900;
-  display: none;
-  pointer-events: auto;
-  border-radius: 0px 0px 10px 10px;
-}
+    #toolbar-blocker {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 76.67%;
+      height: 55px;
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(2px);
+      z-index: 900;
+      display: none;
+      pointer-events: auto;
+      border-radius: 0px 0px 10px 10px;
+    }
 
-.edit-only {
-  position: relative;
-  z-index: 1001;
-}
+    .edit-only {
+      position: relative;
+      z-index: 1001;
+    }
 
-/* ============================
-   SIDEBAR FIX & OPTIMIZATION
-   ============================ */
+    /* ============================
+       SIDEBAR FIX & OPTIMIZATION
+       ============================ */
 
-/* Giữ nguyên layout sidebar cũ, chỉ thêm scroll */
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  overflow: hidden; /* để phần dưới scroll */
-}
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+      overflow: hidden;
+    }
 
-/* --- CHƯA SẮP XẾP: scroll độc lập --- */
-#unassigned-wrapper {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 6px;
-  border-radius: 12px;
-}
+    #unassigned-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+      border-radius: 12px;
+    }
 
-/* Header cố định khi scroll */
-#unassigned-wrapper-header {
-  position: sticky;
-  top: 0;
-  background: #fff;
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-  z-index: 5;
-}
+    #unassigned-wrapper-header {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      z-index: 5;
+    }
 
-/* --- THÊM KHÁCH: tối ưu cho Android --- */
-.quick-add {
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  padding: 10px;
-  margin-top: 8px;
+    .quick-add {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-top: 8px;
+      position: relative;
+    }
 
-  /* KHÔNG dùng sticky vì Android xử lý rất tệ */
-  position: relative;
-}
+    .quick-add textarea {
+      height: 90px;
+      max-height: 140px;
+      resize: vertical;
+    }
 
-/* Textarea tối ưu cho mobile */
-.quick-add textarea {
-  height: 90px;
-  max-height: 140px;
-  resize: vertical;
-}
+    .hidden {
+      display: none !important;
+    }
 
-/* Đảm bảo nút ẩn thực sự ẩn */
-.hidden {
-  display: none !important;
-}
-/* Sidebar: giữ layout cột, KHÔNG dùng overflow:hidden để không phá sticky */
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 100vh;
-}
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 100vh;
+    }
 
-/* Card "Chưa sắp xếp" chiếm phần còn lại, bên trong có vùng scroll */
-.unassigned-card {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0; /* cho phép flex child scroll đúng */
-}
+    /* Card "Chưa sắp xếp" chiếm phần còn lại */
+    .unassigned-card {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
 
-/* Header "Chưa sắp xếp" */
-.unassigned-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #eee;
-}
+    .unassigned-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #eee;
+    }
 
-/* Vùng scroll cho danh sách chưa sắp xếp */
-.unassigned-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 4px;
-}
+    .unassigned-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
 
-/* Thêm khách: sticky ở trên, tối ưu cho Android */
-.quick-add {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: #fff;
-}
+    /* Thêm khách: sticky ở trên, tối ưu cho Android */
+    .quick-add {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #fff;
+    }
 
-/* Textarea Thêm khách: chiều cao vừa phải trên mobile */
-.quick-add textarea {
-  height: 90px;
-  max-height: 140px;
-  resize: vertical;
-}
+    .quick-add textarea {
+      height: 90px;
+      max-height: 140px;
+      resize: vertical;
+    }
 
-/* Đảm bảo nút hidden thực sự ẩn (fix vụ nút lộ ra) */
-.hidden {
-  display: none !important;
-}
+    #help-modal {
+      z-index: 2000 !important;
+    }
 
-#help-modal {
-  z-index: 2000 !important;
-}
-
-/* -------------------------------------------------------------------------------------------------------------------------------------- */ 
-</style>
-
-<link type="text/css" rel="stylesheet" href="css/style.css"/>
-  
+    /* Khách đang được chọn trên Android */
+    .selected-guest {
+      background: #ffe0b2 !important;
+      border: 2px solid #ff9800 !important;
+    }
+  </style>
 </head>
 
 <body>
+  <div class="layout">
+    <div>
+      <div class="toolbar">
+        <button id="add-table">+</button>
+        <button id="adjust-max" class="btn">⚙️ Chỉnh max</button>
 
-<body>
+        <button id="edit-names-btn" class="btn edit-only">✏️ Sửa tên khách</button>
+        <button id="edit-names-save" class="btn hidden edit-only">💾 Đồng ý</button>
+        <button id="edit-names-cancel" class="btn hidden edit-only">❌ Hủy</button>
 
-<div class="layout">
+        <button id="save-btn" class="btn">💾 Lưu</button>
+        <button id="clear-btn" class="btn">🧹 Xóa</button>
+        <input type="file" id="import-csv" accept=".csv" hidden>
+        <button id="import-btn" class="btn">📥 Import CSV</button>
 
-  <div>
-    <div class="toolbar">
-      <button id="add-table">+</button>
-      <button id="adjust-max" class="btn">⚙️ Chỉnh max</button>
-      
-      <button id="edit-names-btn" class="btn edit-only">✏️ Sửa tên khách</button>
-      <button id="edit-names-save" class="btn hidden edit-only">💾 Đồng ý</button>
-      <button id="edit-names-cancel" class="btn hidden edit-only">❌ Hủy</button>
+        <div class="export-menu">
+          <button id="export-btn" class="btn">📤 Xuất</button>
+          <div id="export-menu" class="export-dropdown">
+            <button id="export-csv">📊 Excel (CSV)</button>
+            <button id="export-pdf-all">🖨️ PDF tất cả</button>
+            <button id="export-pdf-one">🧾 PDF 1 bàn</button>
+          </div>
+        </div>
 
-      <button id="save-btn" class="btn">💾 Lưu</button>
-      <button id="clear-btn" class="btn">🧹 Xóa</button>
-      <input type="file" id="import-csv" accept=".csv" hidden>
-      <button id="import-btn" class="btn">📥 Import CSV</button>
-      
-      <div class="export-menu">
-        <button id="export-btn" class="btn">📤 Xuất</button>
-        <div id="export-menu" class="export-dropdown">
-          <button id="export-csv">📊 Excel (CSV)</button>
-          <button id="export-pdf-all">🖨️ PDF tất cả</button>
-          <button id="export-pdf-one">🧾 PDF 1 bàn</button>
+        <button id="help-btn" class="btn">❓ Hướng dẫn</button>
+
+        <div id="summary">
+          Tổng: <span id="total-guests">0</span> khách ·
+          <span id="total-tables">0</span> bàn
         </div>
       </div>
 
-      <button id="help-btn" class="btn">❓ Hướng dẫn</button>
+      <div id="toolbar-blocker"></div>
 
-      <div id="summary">
-        Tổng: <span id="total-guests">0</span> khách ·
-        <span id="total-tables">0</span> bàn
+      <div class="tables" id="tables"></div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- THÊM KHÁCH LUÔN TRÊN CÙNG -->
+      <div class="card quick-add">
+        <h3>Thêm khách</h3>
+        <textarea id="guest-input" placeholder="Mỗi dòng là 1 tên..."></textarea>
+        <button id="add-guest" class="btn">Thêm</button>
+      </div>
+
+      <!-- CHƯA SẮP XẾP -->
+      <div class="card unassigned-card">
+        <div class="unassigned-header">
+          <h3>Chưa sắp xếp</h3>
+          <div>
+            <button id="delete-mode-btn" class="btn">🗑️</button>
+            <button id="delete-confirm-btn" class="btn hidden">✅</button>
+            <button id="delete-cancel-btn" class="btn hidden">❌</button>
+          </div>
+        </div>
+
+        <div class="unassigned-scroll">
+          <ul class="guest-list" id="unassigned"></ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal" id="max-modal">
+    <div class="modal-content">
+      <h3>Chỉnh số khách tối đa</h3>
+      <div style="margin-bottom:10px">
+        <label><b>Chỉnh hàng loạt:</b></label>
+        <input type="number" id="bulk-max" min="1" placeholder="Nhập số khách tối đa..." 
+          style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc;margin-top:4px">
+        <div style="font-size:12px;color:#666;margin-top:2px">
+          Khi nhập số vào đây, tất cả bàn sẽ có số khách tối đa giống nhau.
+        </div>
+      </div>
+
+      <div id="max-list"></div>
+      <div class="modal-actions">
+        <button id="max-cancel" class="btn">Hủy</button>
+        <button id="max-save" class="btn">Lưu</button>
       </div>
     </div>
-
-    <div id="toolbar-blocker"></div>
-
-    <div class="tables" id="tables"></div>
   </div>
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-
-  <!-- THÊM KHÁCH LUÔN TRÊN CÙNG -->
-  <div class="card quick-add">
-    <h3>Thêm khách</h3>
-    <textarea id="guest-input" placeholder="Mỗi dòng là 1 tên..."></textarea>
-    <button id="add-guest" class="btn">Thêm</button>
-  </div>
-
-  <!-- CHƯA SẮP XẾP TRONG CARD RIÊNG, CÓ SCROLL -->
-  <div class="card unassigned-card">
-    <div class="unassigned-header">
-      <h3>Chưa sắp xếp</h3>
-      <div>
-        <button id="delete-mode-btn" class="btn">🗑️</button>
-        <button id="delete-confirm-btn" class="btn hidden">✅</button>
-        <button id="delete-cancel-btn" class="btn hidden">❌</button>
+  <div class="modal" id="pdf-one-modal">
+    <div class="modal-content">
+      <h3>Xuất PDF 1 bàn</h3>
+      <select id="pdf-table-select" style="width:100%;padding:8px;border-radius:8px"></select>
+      <div class="modal-actions">
+        <button id="pdf-one-cancel" class="btn">Hủy</button>
+        <button id="pdf-one-export" class="btn">Xuất</button>
       </div>
     </div>
-
-    <div class="unassigned-scroll">
-      <ul class="guest-list" id="unassigned"></ul>
-    </div>
   </div>
 
-</div>
+  <div class="modal" id="help-modal">
+    <div class="modal-content">
+      <h3>Hướng dẫn sử dụng</h3>
+      <div id="help-content" style="max-height:60vh;overflow:auto;line-height:1.5">
+        <h4>1. Tạo bàn</h4>
+        <p>Bấm nút <b>+</b> để tạo thêm bàn mới. Mỗi bàn có tên và số khách tối đa.</p>
 
-<!-- MODALS (giữ nguyên như bạn gửi) -->
-<div class="modal" id="max-modal">
-  <div class="modal-content">
-    <h3>Chỉnh số khách tối đa</h3>
-    <div style="margin-bottom:10px">
-      <label><b>Chỉnh hàng loạt:</b></label>
-      <input type="number" id="bulk-max" min="1" placeholder="Nhập số khách tối đa..." 
-           style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc;margin-top:4px">
-      <div style="font-size:12px;color:#666;margin-top:2px">
-      Khi nhập số vào đây, tất cả bàn sẽ có số khách tối đa giống nhau.
+        <h4>2. Chỉnh số khách tối đa</h4>
+        <p>Bấm <b>⚙️ Chỉnh max</b> để thay đổi số khách tối đa của từng bàn.</p>
+
+        <h4>3. Lưu dữ liệu</h4>
+        <p>Bấm <b>💾 Lưu</b> để lưu toàn bộ bố cục vào trình duyệt.</p>
+
+        <h4>4. Xuất dữ liệu</h4>
+        <p>Dùng menu <b>📤 Xuất</b> để xuất CSV, PDF tất cả hoặc PDF từng bàn.</p>
+
+        <h4>5. Import CSV</h4>
+        <p>Bấm <b>📥 Import CSV</b> để nhập danh sách khách từ file CSV.</p>
+
+        <h4>6. Thêm khách vào bàn</h4>
+        <p>Bấm nút <b>➕</b> trên mỗi bàn để thêm khách nhanh.</p>
+
+        <h4>7. Thêm khách nhanh</h4>
+        <p>Nhập nhiều tên vào ô “Thêm khách” (mỗi dòng 1 tên) rồi bấm <b>Thêm</b>.</p>
+
+        <h4>8. Kéo‑thả khách</h4>
+        <p>Kéo khách giữa các bàn hoặc từ “Chưa sắp xếp” để bố trí chỗ ngồi.</p>
+      </div>
+      <div class="modal-actions">
+        <button id="help-close" class="btn">Trở về</button>
       </div>
     </div>
-
-    <div id="max-list"></div>
-    <div class="modal-actions">
-      <button id="max-cancel" class="btn">Hủy</button>
-      <button id="max-save" class="btn">Lưu</button>
-    </div>
   </div>
-</div>
 
-<div class="modal" id="pdf-one-modal">
-  <div class="modal-content">
-    <h3>Xuất PDF 1 bàn</h3>
-    <select id="pdf-table-select" style="width:100%;padding:8px;border-radius:8px"></select>
-    <div class="modal-actions">
-      <button id="pdf-one-cancel" class="btn">Hủy</button>
-      <button id="pdf-one-export" class="btn">Xuất</button>
-    </div>
-  </div>
-</div>
+  <div id="print-root"></div>
 
-<div class="modal" id="help-modal">
-  <div class="modal-content">
-    <h3>Hướng dẫn sử dụng</h3>
-    <div id="help-content" style="max-height:60vh;overflow:auto;line-height:1.5">
-      <h4>1. Tạo bàn</h4>
-      <p>Bấm nút <b>+</b> để tạo thêm bàn mới. Mỗi bàn có tên và số khách tối đa.</p>
+  <script>
+    /* ================= DOM ================= */
+    const tablesEl = document.getElementById("tables");
+    const unassigned = document.getElementById("unassigned");
+    const guestInput = document.getElementById("guest-input");
+    const exportBtn = document.getElementById("export-btn");
+    const exportMenu = document.getElementById("export-menu");
+    const printRoot = document.getElementById("print-root");
 
-      <h4>2. Chỉnh số khách tối đa</h4>
-      <p>Bấm <b>⚙️ Chỉnh max</b> để thay đổi số khách tối đa của từng bàn.</p>
+    const maxModal = document.getElementById("max-modal");
+    const maxList = document.getElementById("max-list");
 
-      <h4>3. Lưu dữ liệu</h4>
-      <p>Bấm <b>💾 Lưu</b> để lưu toàn bộ bố cục vào trình duyệt.</p>
+    const pdfOneModal = document.getElementById("pdf-one-modal");
+    const pdfTableSelect = document.getElementById("pdf-table-select");
 
-      <h4>4. Xuất dữ liệu</h4>
-      <p>Dùng menu <b>📤 Xuất</b> để xuất CSV, PDF tất cả hoặc PDF từng bàn.</p>
+    const isTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+    const isAndroid = /Android/i.test(navigator.userAgent || "");
 
-      <h4>5. Import CSV</h4>
-      <p>Bấm <b>📥 Import CSV</b> để nhập danh sách khách từ file CSV.</p>
+    let editNamesMode = false;
+    let selectedGuest = null;
 
-      <h4>6. Thêm khách vào bàn</h4>
-      <p>Bấm nút <b>➕</b> trên mỗi bàn để thêm khách nhanh.</p>
-
-      <h4>7. Thêm khách nhanh</h4>
-      <p>Nhập nhiều tên vào ô “Thêm khách” (mỗi dòng 1 tên) rồi bấm <b>Thêm</b>.</p>
-
-      <h4>8. Kéo‑thả khách</h4>
-      <p>Kéo khách giữa các bàn hoặc từ “Chưa sắp xếp” để bố trí chỗ ngồi.</p>
-    </div>
-    <div class="modal-actions">
-      <button id="help-close" class="btn">Trở về</button>
-    </div>
-  </div>
-</div>
-
-<div id="print-root"></div>
-
-<script>
-/* ================= DOM ================= */
-const tablesEl = document.getElementById("tables");
-const unassigned = document.getElementById("unassigned");
-const guestInput = document.getElementById("guest-input");
-const exportBtn = document.getElementById("export-btn");
-const exportMenu = document.getElementById("export-menu");
-const printRoot = document.getElementById("print-root");
-
-const maxModal = document.getElementById("max-modal");
-const maxList = document.getElementById("max-list");
-
-const pdfOneModal = document.getElementById("pdf-one-modal");
-const pdfTableSelect = document.getElementById("pdf-table-select");
-
-const isTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
-
-let editNamesMode = false;
-/* ================= Helpers ================= */
-function normalizeName(s){ return String(s||"").trim().replace(/\s+/g," "); }
-function createGuestLi(name){
-  const clean = normalizeName(name);
-  const li = document.createElement("li");
-  li.draggable = true;
-  li.dataset.name = clean;
-  li.textContent = clean;
-  return li;
-}
-function stripQuotes(s){
-  return String(s || "").replace(/^"(.*)"$/, "$1").trim();
-}
-function guestNameFromLi(li){
-  return li.dataset.name || normalizeName(li.textContent);
-}
-
-/* ================= Shortening Name ================= */
-function shortName(full){
-  const parts = full.trim().split(/\s+/);
-  if(parts.length <= 2) return full;
-  return parts.slice(-2).join(" ");
-}
-
-/* ================= Update Unassigned View if it's too long ================= */
-function updateUnassignedView(){
-  const list = document.getElementById("unassigned");
-  const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
-  const count = items.length;
-
-  // ⭐ Nếu đang sửa tên → luôn hiển thị đầy đủ, không rút gọn
-  if(editNamesMode){
-    items.forEach(li => li.textContent = li.dataset.name);
-
-    if(count < 20){
-      list.style.display = "block";
-      list.style.gridTemplateColumns = "";
-      list.style.maxHeight = "";
-      list.style.overflowY = "";
-    } else {
-      list.style.display = "grid";
-      list.style.gridTemplateColumns = "repeat(2, 1fr)";
-      list.style.columnGap = "10px";
-      list.style.maxHeight = "";
-      list.style.overflowY = "";
+    function clearSelectedGuest(){
+      if(selectedGuest){
+        selectedGuest.classList.remove("selected-guest");
+        selectedGuest = null;
+      }
     }
 
-    return; // ⭐ QUAN TRỌNG: không chạy xuống phần rút gọn
-  }
-
-  // ⭐ Khi KHÔNG sửa tên → reset về tên đầy đủ trước
-  items.forEach(li => li.textContent = li.dataset.name);
-
-  // Nếu dưới 20 khách → giữ nguyên
-  if(count < 20){
-    list.style.display = "block";
-    list.style.gridTemplateColumns = "";
-    list.style.maxHeight = "";
-    list.style.overflowY = "";
-    return;
-  }
-
-  // ⭐ Rút gọn tên khi KHÔNG sửa tên
-  items.forEach(li => {
-    li.textContent = shortName(li.dataset.name);
-  });
-
-  // Luôn 2 cột
-  list.style.display = "grid";
-  list.style.gridTemplateColumns = "repeat(2, 1fr)";
-  list.style.columnGap = "10px";
-
-  // Scroll nếu > 40 khách
-  if(count > 40){
-    list.style.maxHeight = "600px";
-    list.style.overflowY = "auto";
-  } else {
-    list.style.maxHeight = "";
-    list.style.overflowY = "";
-  }
-}
-
-  
-/* ================= Summary ================= */
-function updateSummary(){
-  document.getElementById("total-tables").textContent =
-    document.querySelectorAll(".table").length;
-  document.getElementById("total-guests").textContent =
-    document.querySelectorAll(".guest-list li:not(.drag-placeholder)").length;
-}
-
-/* ================= Table ================= */
-function createTable(name, max = 10, guests = []){
-  const table = document.createElement("div");
-  table.className = "table";
-  table.dataset.max = String(max);
-  table.dataset.baseName = normalizeName(name) || "Bàn";
-
-  table.innerHTML = `
-    <div class="table-header">
-      <h3 class="table-title"></h3>
-      <div class="table-actions">
-        <button class="quick-add-btn">➕</button>
-        <button class="edit-table-btn">✏️</button>
-        <button class="delete-table-btn">🗑️</button>
-      </div>
-    </div>
-    <div class="quick-add hidden">
-      <input class="quick-add-input" placeholder="Nhập tên khách..." />
-      <div class="quick-add-hint">Enter · Esc</div>
-    </div>
-    <ul class="guest-list"></ul>
-    <div class="table-warning hidden"></div>
-  `;
-
-  const ul = table.querySelector(".guest-list");
-  guests.forEach(g => ul.appendChild(createGuestLi(g)));
-
-  tablesEl.appendChild(table);
-  updateTable(table);
-}
-
-function updateTable(table){
-  const list = table.querySelector(".guest-list");
-
-  // ⭐ KHÔI PHỤC TÊN ĐẦY ĐỦ CHO KHÁCH TRONG BÀN
-  list.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
-    li.textContent = li.dataset.name;
-  });
-
-  const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
-  const max = parseInt(table.dataset.max, 10);
-  const name = normalizeName(table.dataset.baseName || "Bàn");
-  table.querySelector(".table-title").textContent = `${name} (${count}/${max})`;
-
-  const warning = table.querySelector(".table-warning");
-  if(count > max){
-    table.classList.add("over");
-    warning.innerHTML = `⚠️ Bàn đã dư người (${count-max})<br>
-      <button class="auto-fix-btn">Auto đưa về Chưa sắp xếp</button>`;
-    warning.classList.remove("hidden");
-  } else {
-    table.classList.remove("over");
-    warning.classList.add("hidden");
-    warning.innerHTML = "";
-  }
-
-  updateSummary();
-}
-
-
-/* ================= Add ================= */
-document.getElementById("add-table").onclick = () => {
-  createTable(`Bàn ${document.querySelectorAll(".table").length + 1}`);
-  saveState();
-};
-document.getElementById("add-guest").onclick = () => {
-  guestInput.value.split("\n").map(normalizeName).filter(Boolean)
-    .forEach(n => unassigned.appendChild(createGuestLi(n)));
-  guestInput.value = "";
-  saveState();
-  updateUnassignedView();
-};
-
-/* ================= Drag & Drop desktop ================= */
-let draggedItem = null;
-const placeholder = document.createElement("li");
-placeholder.className = "drag-placeholder";
-
-function getDragAfterElement(container, y){
-  const items = [...container.querySelectorAll("li:not(.dragging):not(.drag-placeholder)")];
-  return items.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-    if(offset < 0 && offset > closest.offset){
-      return { offset, element: child };
+    /* ================= Helpers ================= */
+    function normalizeName(s){ return String(s||"").trim().replace(/\s+/g," "); }
+    function createGuestLi(name){
+      const clean = normalizeName(name);
+      const li = document.createElement("li");
+      li.draggable = !isAndroid; // Windows: drag, Android: không drag
+      li.dataset.name = clean;
+      li.textContent = clean;
+      return li;
     }
-    return closest;
-  }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
-}
-
-document.addEventListener("dragstart", e => {
-  if(e.target.tagName !== "LI") return;
-  draggedItem = e.target;
-  draggedItem.classList.add("dragging");
-  e.dataTransfer.setData("","");
-});
-document.addEventListener("dragover", e => {
-  const list = e.target.closest(".guest-list");
-  if(!list || !draggedItem) return;
-  e.preventDefault();
-  const after = getDragAfterElement(list, e.clientY);
-  after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
-  updateDropHints();
-});
-document.addEventListener("drop", e => {
-  const list = e.target.closest(".guest-list");
-  if(!list || !draggedItem) return;
-  e.preventDefault();
-  list.insertBefore(draggedItem, placeholder);
-  draggedItem.textContent = draggedItem.dataset.name;
-  placeholder.remove();
-  draggedItem.classList.remove("dragging");
-  draggedItem = null;
-  clearDropHints();
-  document.querySelectorAll(".table").forEach(updateTable);
-  saveState();
-  updateUnassignedView();
-});
-document.addEventListener("dragend", () => {
-  placeholder.remove();
-  clearDropHints();
-  updateUnassignedView();
-});
-
-/* ================= Touch drag ================= */
-if(isTouch){
-  let touchItem=null, touchClone=null, timer=null;
-
-  document.addEventListener("touchstart", e=>{
-    const li=e.target.closest(".guest-list li");
-    if(!li) return;
-    timer=setTimeout(()=>{
-      touchItem=li;
-      const r=li.getBoundingClientRect();
-      touchClone=li.cloneNode(true);
-      touchClone.classList.add("touch-dragging");
-      touchClone.style.width=r.width+"px";
-      document.body.appendChild(touchClone);
-      placeholder.style.height=r.height+"px";
-      li.parentElement.insertBefore(placeholder,li);
-      li.style.visibility="hidden";
-    },200);
-  },{passive:false});
-
-  document.addEventListener("touchmove", e=>{
-    if(timer){clearTimeout(timer);timer=null;}
-    if(!touchItem||!touchClone) return;
-    e.preventDefault();
-    const t=e.touches[0];
-    touchClone.style.left=t.clientX-touchClone.offsetWidth/2+"px";
-    touchClone.style.top=t.clientY-touchClone.offsetHeight/2+"px";
-    const el=document.elementFromPoint(t.clientX,t.clientY);
-    const list=el?.closest(".guest-list");
-    if(!list) return;
-    const after=getDragAfterElement(list,t.clientY);
-    after?list.insertBefore(placeholder,after):list.appendChild(placeholder);
-    updateDropHints();
-    if(t.clientY<80) window.scrollBy(0,-10);
-    if(window.innerHeight-t.clientY<80) window.scrollBy(0,10);
-  },{passive:false});
-
-  document.addEventListener("touchend", ()=>{
-    if(!touchItem) return;
-    placeholder.parentElement.insertBefore(touchItem,placeholder);
-    touchItem.style.visibility="";
-    placeholder.remove();
-    touchClone.remove();
-    touchItem=null;touchClone=null;
-    clearDropHints();
-    document.querySelectorAll(".table").forEach(updateTable);
-    saveState();
-    updateUnassignedView();
-  });
-}
-
-/* ================= Touch drag (Android) ================= */
-if(isTouch){
-  // Tránh xung đột HTML5 drag trên mobile
-  document.addEventListener("touchstart", e => {
-    const li = e.target.closest("li");
-    if(li) li.draggable = false;
-  }, {passive:true});
-
-  let tDragged = null;
-  let ghost = null;
-
-  function ensurePlaceholder(list){
-    if(!placeholder.parentElement) list.appendChild(placeholder);
-  }
-
-  function listFromPoint(x, y){
-    const el = document.elementFromPoint(x, y);
-    return el ? el.closest(".guest-list") : null;
-  }
-
-  document.addEventListener("touchstart", e => {
-    const li = e.target.closest(".guest-list li");
-    if(!li || li.classList.contains("drag-placeholder")) return;
-
-    tDragged = li;
-
-    const r = li.getBoundingClientRect();
-    ghost = li.cloneNode(true);
-    ghost.classList.add("touch-dragging");
-    ghost.style.left = `${r.left}px`;
-    ghost.style.top = `${r.top}px`;
-    ghost.style.width = `${r.width}px`;
-    document.body.appendChild(ghost);
-
-    li.classList.add("dragging");
-
-    const list = li.closest(".guest-list");
-    ensurePlaceholder(list);
-    list.insertBefore(placeholder, li.nextSibling);
-
-    e.preventDefault();
-  }, {passive:false});
-
-  document.addEventListener("touchmove", e => {
-    if(!tDragged || !ghost) return;
-
-    const t = e.touches[0];
-    ghost.style.left = `${t.clientX - ghost.offsetWidth / 2}px`;
-    ghost.style.top  = `${t.clientY - 16}px`;
-
-    const list = listFromPoint(t.clientX, t.clientY);
-    if(!list) return;
-
-    const after = getDragAfterElement(list, t.clientY);
-    after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
-
-    updateDropHints();
-    e.preventDefault();
-  }, {passive:false});
-
-  document.addEventListener("touchend", () => {
-    if(!tDragged) return;
-
-    const targetList = placeholder.closest(".guest-list");
-    if(targetList){
-      targetList.insertBefore(tDragged, placeholder);
-      tDragged.textContent = tDragged.dataset.name;
+    function stripQuotes(s){
+      return String(s || "").replace(/^"(.*)"$/, "$1").trim();
+    }
+    function guestNameFromLi(li){
+      return li.dataset.name || normalizeName(li.textContent);
     }
 
-    placeholder.remove();
-    clearDropHints();
-
-    tDragged.classList.remove("dragging");
-    tDragged = null;
-
-    if(ghost){
-      ghost.remove();
-      ghost = null;
+    /* ================= Shortening Name ================= */
+    function shortName(full){
+      const parts = full.trim().split(/\s+/);
+      if(parts.length <= 2) return full;
+      return parts.slice(-2).join(" ");
     }
 
-    document.querySelectorAll(".table").forEach(updateTable);
-    saveState();
-    updateUnassignedView();
-  }, {passive:true});
+    /* ================= Update Unassigned View ================= */
+    function updateUnassignedView(){
+      const list = document.getElementById("unassigned");
+      const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
+      const count = items.length;
 
-  document.addEventListener("touchcancel", () => {
-    if(ghost) ghost.remove();
-    ghost = null;
+      // Đang sửa tên → luôn hiển thị đầy đủ
+      if(editNamesMode){
+        items.forEach(li => li.textContent = li.dataset.name);
 
-    if(tDragged){
-      tDragged.classList.remove("dragging");
-      tDragged.textContent = tDragged.dataset.name;
-    }
+        if(count < 20){
+          list.style.display = "block";
+          list.style.gridTemplateColumns = "";
+          list.style.maxHeight = "";
+          list.style.overflowY = "";
+        } else {
+          list.style.display = "grid";
+          list.style.gridTemplateColumns = "repeat(2, 1fr)";
+          list.style.columnGap = "10px";
+          list.style.maxHeight = "";
+          list.style.overflowY = "";
+        }
 
-    tDragged = null;
-
-    placeholder.remove();
-    clearDropHints();
-    updateUnassignedView();
-  }, {passive:true});
-
-}
-
-/* ================= Drop hints ================= */
-function updateDropHints(){
-  document.querySelectorAll(".table").forEach(t=>{
-    const max=parseInt(t.dataset.max,10);
-    const count=t.querySelectorAll("li:not(.drag-placeholder)").length;
-    t.classList.toggle("can-drop",count<max);
-    t.classList.toggle("cannot-drop",count>=max);
-  });
-}
-function clearDropHints(){
-  document.querySelectorAll(".table").forEach(t=>{
-    t.classList.remove("can-drop","cannot-drop");
-  });
-}
-
-/* ================= Table actions ================= */
-function closeQuickAdd(box){
-  box.querySelector("input").value="";
-  box.classList.add("hidden");
-  box.classList.remove("active");
-}
-
-tablesEl.addEventListener("click", e=>{
-  const table=e.target.closest(".table");
-  if(!table) return;
-
-  if(e.target.classList.contains("quick-add-btn")){
-    const box=table.querySelector(".quick-add");
-    document.querySelectorAll(".quick-add.active").forEach(b=>b!==box&&closeQuickAdd(b));
-    box.classList.remove("hidden");
-    box.classList.add("active");
-    box.querySelector("input").focus();
-    return;
-  }
-
-  if(e.target.classList.contains("edit-table-btn")){
-    const title = table.querySelector(".table-title");
-    title.contentEditable = true;
-    title.focus();
-    title.scrollIntoView({behavior:"smooth",block:"center"});
-    document.execCommand("selectAll");
-    return;
-  }
-
-  if(e.target.classList.contains("delete-table-btn")){
-    if(!confirm(`Xóa ${table.dataset.baseName}?\nToàn bộ khách sẽ chuyển về "Chưa sắp xếp".`)) return;
-    table.querySelectorAll(".guest-list li:not(.drag-placeholder)")
-      .forEach(li => unassigned.appendChild(li));
-    table.remove();
-    updateSummary();
-    saveState();
-    updateUnassignedView();
-    return;
-  }
-
-  if(e.target.classList.contains("auto-fix-btn")){
-    const max = parseInt(table.dataset.max, 10);
-    const list = table.querySelector(".guest-list");
-    const extra = list.querySelectorAll("li:not(.drag-placeholder)").length - max;
-    if(!confirm(`Đưa ${extra} khách dư về "Chưa sắp xếp"?`)) return;
-    [...list.querySelectorAll("li:not(.drag-placeholder)")].slice(max)
-      .forEach(li => unassigned.appendChild(li));
-    updateTable(table);
-    saveState();
-    updateUnassignedView();
-    return;
-  }
-});
-
-/* ================= Quick add / rename ================= */
-tablesEl.addEventListener("keydown", e => {
-  if(e.target.classList.contains("quick-add-input")){
-    const table = e.target.closest(".table");
-    const box = e.target.closest(".quick-add");
-    const list = table.querySelector(".guest-list");
-    const max = parseInt(table.dataset.max, 10);
-
-    if(e.key === "Enter"){
-      e.preventDefault();
-      const name = normalizeName(e.target.value);
-      if(!name) return;
-
-      const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
-      if(count >= max){
-        alert("Bàn đã đủ người!");
         return;
       }
 
-      list.appendChild(createGuestLi(name));
-      closeQuickAdd(box);
+      // Reset lại tên đầy đủ
+      items.forEach(li => li.textContent = li.dataset.name);
+
+      if(count < 20){
+        list.style.display = "block";
+        list.style.gridTemplateColumns = "";
+        list.style.maxHeight = "";
+        list.style.overflowY = "";
+        return;
+      }
+
+      // Rút gọn tên
+      items.forEach(li => {
+        li.textContent = shortName(li.dataset.name);
+      });
+
+      list.style.display = "grid";
+      list.style.gridTemplateColumns = "repeat(2, 1fr)";
+      list.style.columnGap = "10px";
+
+      if(count > 40){
+        list.style.maxHeight = "600px";
+        list.style.overflowY = "auto";
+      } else {
+        list.style.maxHeight = "";
+        list.style.overflowY = "";
+      }
+    }
+
+    /* ================= Summary ================= */
+    function updateSummary(){
+      document.getElementById("total-tables").textContent =
+        document.querySelectorAll(".table").length;
+      document.getElementById("total-guests").textContent =
+        document.querySelectorAll(".guest-list li:not(.drag-placeholder)").length;
+    }
+
+    /* ================= Table ================= */
+    function createTable(name, max = 10, guests = []){
+      const table = document.createElement("div");
+      table.className = "table";
+      table.dataset.max = String(max);
+      table.dataset.baseName = normalizeName(name) || "Bàn";
+
+      table.innerHTML = `
+        <div class="table-header">
+          <h3 class="table-title"></h3>
+          <div class="table-actions">
+            <button class="quick-add-btn">➕</button>
+            <button class="edit-table-btn">✏️</button>
+            <button class="delete-table-btn">🗑️</button>
+          </div>
+        </div>
+        <div class="quick-add hidden">
+          <input class="quick-add-input" placeholder="Nhập tên khách..." />
+          <div class="quick-add-hint">Enter · Esc</div>
+        </div>
+        <ul class="guest-list"></ul>
+        <div class="table-warning hidden"></div>
+      `;
+
+      const ul = table.querySelector(".guest-list");
+      guests.forEach(g => ul.appendChild(createGuestLi(g)));
+
+      tablesEl.appendChild(table);
       updateTable(table);
+    }
+
+    function updateTable(table){
+      const list = table.querySelector(".guest-list");
+
+      // Khôi phục tên đầy đủ
+      list.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
+        li.textContent = li.dataset.name;
+      });
+
+      const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
+      const max = parseInt(table.dataset.max, 10);
+      const name = normalizeName(table.dataset.baseName || "Bàn");
+      table.querySelector(".table-title").textContent = `${name} (${count}/${max})`;
+
+      const warning = table.querySelector(".table-warning");
+      if(count > max){
+        table.classList.add("over");
+        warning.innerHTML = `⚠️ Bàn đã dư người (${count-max})<br>
+          <button class="auto-fix-btn">Auto đưa về Chưa sắp xếp</button>`;
+        warning.classList.remove("hidden");
+      } else {
+        table.classList.remove("over");
+        warning.classList.add("hidden");
+        warning.innerHTML = "";
+      }
+
+      updateSummary();
+    }
+
+    /* ================= Add ================= */
+    document.getElementById("add-table").onclick = () => {
+      createTable(`Bàn ${document.querySelectorAll(".table").length + 1}`);
+      saveState();
+    };
+    document.getElementById("add-guest").onclick = () => {
+      guestInput.value.split("\n").map(normalizeName).filter(Boolean)
+        .forEach(n => unassigned.appendChild(createGuestLi(n)));
+      guestInput.value = "";
       saveState();
       updateUnassignedView();
-      return;
+    };
+
+    /* ================= Drag & Drop desktop ================= */
+    let draggedItem = null;
+    const placeholder = document.createElement("li");
+    placeholder.className = "drag-placeholder";
+
+    function getDragAfterElement(container, y){
+      const items = [...container.querySelectorAll("li:not(.dragging):not(.drag-placeholder)")];
+      return items.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if(offset < 0 && offset > closest.offset){
+          return { offset, element: child };
+        }
+        return closest;
+      }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
     }
 
-    if(e.key === "Escape"){
-      e.preventDefault();
-      closeQuickAdd(box);
-      return;
+    if(!isAndroid){
+      document.addEventListener("dragstart", e => {
+        if(e.target.tagName !== "LI") return;
+        draggedItem = e.target;
+        draggedItem.classList.add("dragging");
+        e.dataTransfer.setData("","");
+      });
+      document.addEventListener("dragover", e => {
+        const list = e.target.closest(".guest-list");
+        if(!list || !draggedItem) return;
+        e.preventDefault();
+        const after = getDragAfterElement(list, e.clientY);
+        after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
+        updateDropHints();
+      });
+      document.addEventListener("drop", e => {
+        const list = e.target.closest(".guest-list");
+        if(!list || !draggedItem) return;
+        e.preventDefault();
+        list.insertBefore(draggedItem, placeholder);
+        draggedItem.textContent = draggedItem.dataset.name;
+        placeholder.remove();
+        draggedItem.classList.remove("dragging");
+        draggedItem = null;
+        clearDropHints();
+        document.querySelectorAll(".table").forEach(updateTable);
+        saveState();
+        updateUnassignedView();
+      });
+      document.addEventListener("dragend", () => {
+        placeholder.remove();
+        clearDropHints();
+        updateUnassignedView();
+      });
     }
-  }
 
-  if(e.target.classList.contains("table-title") && e.key === "Enter"){
-    e.preventDefault();
-    e.target.blur();
-  }
-});
+    /* ================= Touch drag ================= */
+    if(isTouch && !isAndroid){
+      let touchItem=null, touchClone=null, timer=null;
 
-tablesEl.addEventListener("blur", e => {
-  if(!e.target.classList.contains("table-title")) return;
-  const table = e.target.closest(".table");
-  const raw = e.target.textContent.replace(/\s*\(\d+\/\d+\)\s*$/, "");
-  table.dataset.baseName = normalizeName(raw) || "Bàn";
-  e.target.contentEditable = false;
-  updateTable(table);
-  saveState();
-}, true);
+      document.addEventListener("touchstart", e=>{
+        const li=e.target.closest(".guest-list li");
+        if(!li) return;
+        timer=setTimeout(()=>{
+          touchItem=li;
+          const r=li.getBoundingClientRect();
+          touchClone=li.cloneNode(true);
+          touchClone.classList.add("touch-dragging");
+          touchClone.style.width=r.width+"px";
+          document.body.appendChild(touchClone);
+          placeholder.style.height=r.height+"px";
+          li.parentElement.insertBefore(placeholder,li);
+          li.style.visibility="hidden";
+        },200);
+      },{passive:false});
 
-document.addEventListener("click", e => {
-  document.querySelectorAll(".quick-add.active").forEach(box => {
-    const inside = box.contains(e.target);
-    const isBtn = e.target.closest(".quick-add-btn");
-    if(!inside && !isBtn) closeQuickAdd(box);
-  });
-});
+      document.addEventListener("touchmove", e=>{
+        if(timer){clearTimeout(timer);timer=null;}
+        if(!touchItem||!touchClone) return;
+        e.preventDefault();
+        const t=e.touches[0];
+        touchClone.style.left=t.clientX-touchClone.offsetWidth/2+"px";
+        touchClone.style.top=t.clientY-touchClone.offsetHeight/2+"px";
+        const el=document.elementFromPoint(t.clientX,t.clientY);
+        const list=el?.closest(".guest-list");
+        if(!list) return;
+        const after=getDragAfterElement(list,t.clientY);
+        after?list.insertBefore(placeholder,after):list.appendChild(placeholder);
+        updateDropHints();
+        if(t.clientY<80) window.scrollBy(0,-10);
+        if(window.innerHeight-t.clientY<80) window.scrollBy(0,10);
+      },{passive:false});
 
-/* ================= Adjust max ================= */
-document.getElementById("adjust-max").onclick = () => {
-  maxList.innerHTML = "";
-  document.querySelectorAll(".table").forEach((t,i) => {
-    const row = document.createElement("div");
-    row.className = "max-row";
-    row.innerHTML = `<label>${t.dataset.baseName}</label>
-      <input type="number" min="1" value="${t.dataset.max}" data-i="${i}">`;
-    maxList.appendChild(row);
-  });
-  maxModal.style.display = "flex";
-};
-
-document.getElementById("max-save").onclick = () => {
-  const bulk = parseInt(document.getElementById("bulk-max").value, 10);
-
-  if(!isNaN(bulk) && bulk > 0){
-    // Áp dụng hàng loạt
-    document.querySelectorAll(".table").forEach(t => {
-      t.dataset.max = String(bulk);
-      updateTable(t);
-    });
-  } else {
-    // Áp dụng từng bàn như cũ
-    document.querySelectorAll("#max-list input").forEach(inp => {
-      const t = document.querySelectorAll(".table")[inp.dataset.i];
-      t.dataset.max = String(Math.max(1, parseInt(inp.value, 10) || 1));
-      updateTable(t);
-    });
-  }
-
-  maxModal.style.display = "none";
-  saveState();
-};
-
-
-document.getElementById("max-cancel").onclick = () => {
-  maxModal.style.display = "none";
-};
-
-/* ================= Export dropdown ================= */
-exportBtn.onclick = (e) => {
-  e.stopPropagation();
-  exportMenu.style.display = exportMenu.style.display === "flex" ? "none" : "flex";
-};
-document.addEventListener("click", () => exportMenu.style.display = "none");
-
-/* ================= Print / PDF (Android-safe via iframe) ================= */
-function sanitizeForPrint(root){
-  root.querySelectorAll(".table-actions,.quick-add,.table-warning").forEach(el=>el.remove());
-  root.querySelectorAll(".drag-placeholder").forEach(el=>el.remove());
-  // gỡ các nút xóa nếu đang ở delete mode
-  root.querySelectorAll(".delete-x").forEach(el=>el.remove());
-  root.querySelectorAll(".marked-delete").forEach(li=>li.classList.remove("marked-delete"));
-}
-
-function printHTML(html){
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentDocument || iframe.contentWindow.document;
-  const cssText = document.querySelector("style") ? document.querySelector("style").innerHTML : "";
-
-  doc.open();
-  doc.write(`<!doctype html><html><head><meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Print</title>
-    <style>${cssText}</style>
-    <style>
-      body{background:#fff}
-      .layout{display:none!important}
-      #print-root{display:block!important; position:static!important}
-      @media print{
-        @page{size:A4;margin:10mm}
-      }
-    </style>
-  </head><body>
-    <div id="print-root">${html}</div>
-  </body></html>`);
-  doc.close();
-
-  // sanitize trong iframe
-  sanitizeForPrint(doc.getElementById("print-root"));
-
-  // Android cần delay để layout xong trước khi print
-  setTimeout(() => {
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
-
-    // dọn iframe sau khi gọi print
-    setTimeout(() => iframe.remove(), 1000);
-  }, 400);
-}
-
-
-/* ================= Export ================= */
-document.getElementById("export-csv").onclick = () => {
-  let csv = "Bàn,Tên khách\n";
-  document.querySelectorAll(".table").forEach(t => {
-    t.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => {
-      csv += `"${t.dataset.baseName}","${guestNameFromLi(li)}"\n`;
-    });
-  });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
-  a.download = "ban-tiec.csv";
-  a.click();
-};
-
-document.getElementById("export-pdf-all").onclick = () => {
-  const wrapper = document.createElement("div");
-
-  const unassignedBlock = document.createElement("div");
-unassignedBlock.style.pageBreakAfter = "always";   // 👈 DÒNG QUAN TRỌNG
-unassignedBlock.innerHTML = `
-  <h2>Chưa sắp xếp</h2>
-  <ul class="guest-list">
-    ${[...unassigned.querySelectorAll("li:not(.drag-placeholder)")]
-      .map(li => `<li>${guestNameFromLi(li)}</li>`).join("")}
-  </ul>
-`;
-wrapper.appendChild(unassignedBlock);
-
-
-  document.querySelectorAll(".table").forEach(t => wrapper.appendChild(t.cloneNode(true)));
-  printHTML(wrapper.innerHTML);
-};
-
-document.getElementById("export-pdf-one").onclick = () => {
-  pdfTableSelect.innerHTML = "";
-  document.querySelectorAll(".table").forEach((t,i) => {
-    const o = document.createElement("option");
-    o.value = i;
-    o.textContent = t.dataset.baseName;
-    pdfTableSelect.appendChild(o);
-  });
-  pdfOneModal.style.display = "flex";
-};
-
-document.getElementById("pdf-one-export").onclick = () => {
-  const t = document.querySelectorAll(".table")[pdfTableSelect.value];
-  pdfOneModal.style.display = "none";
-  printHTML(t.outerHTML);
-};
-document.getElementById("pdf-one-cancel").onclick = () => pdfOneModal.style.display = "none";
-
-/* ================= Save / Load ================= */
-document.getElementById("save-btn").onclick = () => {
-  saveState();
-  alert("Đã lưu!");
-};
-
-document.getElementById("clear-btn").onclick = () => {
-  if(confirm("Xóa toàn bộ dữ liệu?")){
-    localStorage.removeItem("wedding_state");
-    location.reload();
-  }
-};
-
-function saveState(){
-  const state = {
-    tables: [...document.querySelectorAll(".table")].map(t => ({
-      name: t.dataset.baseName,
-      max: t.dataset.max,
-      guests: [...t.querySelectorAll(".guest-list li:not(.drag-placeholder)")]
-        .map(li => guestNameFromLi(li))
-    })),
-    unassigned: [...unassigned.querySelectorAll("li:not(.drag-placeholder)")]
-      .map(li => guestNameFromLi(li))
-  };
-  localStorage.setItem("wedding_state", JSON.stringify(state));
-}
-
-(function load(){
-  const raw = localStorage.getItem("wedding_state");
-  if(!raw){
-    createTable("Bàn 1");
-    updateSummary();
-    return;
-  }
-  const s = JSON.parse(raw);
-  s.tables.forEach(t => createTable(t.name, t.max, t.guests));
-  s.unassigned.forEach(n => unassigned.appendChild(createGuestLi(n)));
-  document.querySelectorAll(".table").forEach(updateTable);
-  updateUnassignedView();
-})();
-
-let deleteMode = false;
-
-const deleteBtn = document.getElementById("delete-mode-btn");
-const deleteConfirmBtn = document.getElementById("delete-confirm-btn");
-const deleteCancelBtn = document.getElementById("delete-cancel-btn");
-
-deleteBtn.onclick = () => {
-  deleteMode = true;
-  document.body.classList.add("delete-mode");
-
-  deleteBtn.classList.add("hidden");
-  deleteConfirmBtn.classList.remove("hidden");
-  deleteCancelBtn.classList.remove("hidden");
-
-  document.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => {
-    if(!li.querySelector(".delete-x")){
-      const x = document.createElement("span");
-      x.textContent = "✖";
-      x.className = "delete-x";
-      li.appendChild(x);
+      document.addEventListener("touchend", ()=>{
+        if(!touchItem) return;
+        placeholder.parentElement.insertBefore(touchItem,placeholder);
+        touchItem.style.visibility="";
+        placeholder.remove();
+        touchClone.remove();
+        touchItem=null;touchClone=null;
+        clearDropHints();
+        document.querySelectorAll(".table").forEach(updateTable);
+        saveState();
+        updateUnassignedView();
+      });
     }
-    li.classList.remove("marked-delete");
-  });
-};
 
-deleteCancelBtn.onclick = () => {
-  deleteMode = false;
-  document.body.classList.remove("delete-mode");
+    /* ================= Touch drag (Android version cũ – tắt khi Android mode tap) ================= */
+    if(isTouch && !isAndroid){
+      document.addEventListener("touchstart", e => {
+        const li = e.target.closest("li");
+        if(li) li.draggable = false;
+      }, {passive:true});
 
-  deleteBtn.classList.remove("hidden");
-  deleteConfirmBtn.classList.add("hidden");
-  deleteCancelBtn.classList.add("hidden");
+      let tDragged = null;
+      let ghost = null;
 
-  document.querySelectorAll(".delete-x").forEach(x => x.remove());
-  document.querySelectorAll(".marked-delete").forEach(li => li.classList.remove("marked-delete"));
-};
-
-deleteConfirmBtn.onclick = () => {
-  if(!confirm("Xóa các khách mời đã chọn?")) return;
-
-  document.querySelectorAll(".marked-delete").forEach(li => li.remove());
-
-  deleteCancelBtn.onclick(); // reset mode
-  document.querySelectorAll(".table").forEach(updateTable);
-  saveState();
-  updateUnassignedView();
-};
-
-/* Click ✖ để đánh dấu */
-document.addEventListener("click", e => {
-  if(!deleteMode) return;
-  if(e.target.classList.contains("delete-x")){
-    e.target.closest("li").classList.toggle("marked-delete");
-  }
-
-
-});
-
-document.getElementById("import-btn").onclick = () => {
-  document.getElementById("import-csv").click();
-};
-
-document.getElementById("import-csv").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if(!file) return;
-
-  const reader = new FileReader();
-  reader.onload = () => parseCSV(reader.result);
-  reader.readAsText(file, "utf-8");
-
-  e.target.value = ""; // reset input
-});
-
-function parseCSV(text){
-  const lines = text.trim().split(/\r?\n/);
-  if(lines.length < 2) return alert("CSV không hợp lệ");
-
-  const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-  const idxName = headers.indexOf("tên khách");
-  const idxTable = headers.indexOf("bàn");
-
-  if(idxName === -1) return alert("CSV phải có cột 'Tên khách'");
-
-  lines.slice(1).forEach(line => {
-    const cols = line.split(",").map(c => stripQuotes(c));
-    const name = normalizeName(cols[idxName]);
-    if(!name) return;
-
-    if(idxTable !== -1 && cols[idxTable]){
-      const tableName = normalizeName(stripQuotes(cols[idxTable]));
-      let table = [...document.querySelectorAll(".table")]
-        .find(t => t.dataset.baseName === tableName);
-
-      if(!table){
-        createTable(tableName);
-        table = [...document.querySelectorAll(".table")]
-          .find(t => t.dataset.baseName === tableName);
+      function ensurePlaceholder(list){
+        if(!placeholder.parentElement) list.appendChild(placeholder);
       }
 
-      table.querySelector(".guest-list").appendChild(createGuestLi(name));
+      function listFromPoint(x, y){
+        const el = document.elementFromPoint(x, y);
+        return el ? el.closest(".guest-list") : null;
+      }
+
+      document.addEventListener("touchstart", e => {
+        const li = e.target.closest(".guest-list li");
+        if(!li || li.classList.contains("drag-placeholder")) return;
+
+        tDragged = li;
+
+        const r = li.getBoundingClientRect();
+        ghost = li.cloneNode(true);
+        ghost.classList.add("touch-dragging");
+        ghost.style.left = `${r.left}px`;
+        ghost.style.top = `${r.top}px`;
+        ghost.style.width = `${r.width}px`;
+        document.body.appendChild(ghost);
+
+        li.classList.add("dragging");
+
+        const list = li.closest(".guest-list");
+        ensurePlaceholder(list);
+        list.insertBefore(placeholder, li.nextSibling);
+
+        e.preventDefault();
+      }, {passive:false});
+
+      document.addEventListener("touchmove", e => {
+        if(!tDragged || !ghost) return;
+
+        const t = e.touches[0];
+        ghost.style.left = `${t.clientX - ghost.offsetWidth / 2}px`;
+        ghost.style.top  = `${t.clientY - 16}px`;
+
+        const list = listFromPoint(t.clientX, t.clientY);
+        if(!list) return;
+
+        const after = getDragAfterElement(list, t.clientY);
+        after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
+
+        updateDropHints();
+        e.preventDefault();
+      }, {passive:false});
+
+      document.addEventListener("touchend", () => {
+        if(!tDragged) return;
+
+        const targetList = placeholder.closest(".guest-list");
+        if(targetList){
+          targetList.insertBefore(tDragged, placeholder);
+          tDragged.textContent = tDragged.dataset.name;
+        }
+
+        placeholder.remove();
+        clearDropHints();
+
+        tDragged.classList.remove("dragging");
+        tDragged = null;
+
+        if(ghost){
+          ghost.remove();
+          ghost = null;
+        }
+
+        document.querySelectorAll(".table").forEach(updateTable);
+        saveState();
+        updateUnassignedView();
+      }, {passive:true});
+
+      document.addEventListener("touchcancel", () => {
+        if(ghost) ghost.remove();
+        ghost = null;
+
+        if(tDragged){
+          tDragged.classList.remove("dragging");
+          tDragged.textContent = tDragged.dataset.name;
+        }
+
+        tDragged = null;
+
+        placeholder.remove();
+        clearDropHints();
+        updateUnassignedView();
+      }, {passive:true});
+    }
+
+    /* ================= Drop hints ================= */
+    function updateDropHints(){
+      document.querySelectorAll(".table").forEach(t=>{
+        const max=parseInt(t.dataset.max,10);
+        const count=t.querySelectorAll("li:not(.drag-placeholder)").length;
+        t.classList.toggle("can-drop",count<max);
+        t.classList.toggle("cannot-drop",count>=max);
+      });
+    }
+    function clearDropHints(){
+      document.querySelectorAll(".table").forEach(t=>{
+        t.classList.remove("can-drop","cannot-drop");
+      });
+    }
+
+    /* ================= Table actions ================= */
+    function closeQuickAdd(box){
+      box.querySelector("input").value="";
+      box.classList.add("hidden");
+      box.classList.remove("active");
+    }
+
+    tablesEl.addEventListener("click", e=>{
+      const table=e.target.closest(".table");
+      if(!table) return;
+
+      if(e.target.classList.contains("quick-add-btn")){
+        const box=table.querySelector(".quick-add");
+        document.querySelectorAll(".quick-add.active").forEach(b=>b!==box&&closeQuickAdd(b));
+        box.classList.remove("hidden");
+        box.classList.add("active");
+        box.querySelector("input").focus();
+        return;
+      }
+
+      if(e.target.classList.contains("edit-table-btn")){
+        const title = table.querySelector(".table-title");
+        title.contentEditable = true;
+        title.focus();
+        title.scrollIntoView({behavior:"smooth",block:"center"});
+        document.execCommand("selectAll");
+        return;
+      }
+
+      if(e.target.classList.contains("delete-table-btn")){
+        if(!confirm(`Xóa ${table.dataset.baseName}?\nToàn bộ khách sẽ chuyển về "Chưa sắp xếp".`)) return;
+        table.querySelectorAll(".guest-list li:not(.drag-placeholder)")
+          .forEach(li => unassigned.appendChild(li));
+        table.remove();
+        updateSummary();
+        saveState();
+        updateUnassignedView();
+        return;
+      }
+
+      if(e.target.classList.contains("auto-fix-btn")){
+        const max = parseInt(table.dataset.max, 10);
+        const list = table.querySelector(".guest-list");
+        const extra = list.querySelectorAll("li:not(.drag-placeholder)").length - max;
+        if(!confirm(`Đưa ${extra} khách dư về "Chưa sắp xếp"?`)) return;
+        [...list.querySelectorAll("li:not(.drag-placeholder)")].slice(max)
+          .forEach(li => unassigned.appendChild(li));
+        updateTable(table);
+        saveState();
+        updateUnassignedView();
+        return;
+      }
+
+      // Android: click vào bàn để nhận khách đang được chọn
+      if(isAndroid && selectedGuest && !editNamesMode && !deleteMode){
+        const list = table.querySelector(".guest-list");
+        const max = parseInt(table.dataset.max, 10);
+        const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
+
+        if(count >= max){
+          alert("Bàn đã đủ người!");
+          return;
+        }
+
+        list.appendChild(selectedGuest);
+        clearSelectedGuest();
+
+        document.querySelectorAll(".table").forEach(updateTable);
+        saveState();
+        updateUnassignedView();
+      }
+    });
+
+    /* ================= Quick add / rename ================= */
+    tablesEl.addEventListener("keydown", e => {
+      if(e.target.classList.contains("quick-add-input")){
+        const table = e.target.closest(".table");
+        const box = e.target.closest(".quick-add");
+        const list = table.querySelector(".guest-list");
+        const max = parseInt(table.dataset.max, 10);
+
+        if(e.key === "Enter"){
+          e.preventDefault();
+          const name = normalizeName(e.target.value);
+          if(!name) return;
+
+          const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
+          if(count >= max){
+            alert("Bàn đã đủ người!");
+            return;
+          }
+
+          list.appendChild(createGuestLi(name));
+          closeQuickAdd(box);
+          updateTable(table);
+          saveState();
+          updateUnassignedView();
+          return;
+        }
+
+        if(e.key === "Escape"){
+          e.preventDefault();
+          closeQuickAdd(box);
+          return;
+        }
+      }
+
+      if(e.target.classList.contains("table-title") && e.key === "Enter"){
+        e.preventDefault();
+        e.target.blur();
+      }
+    });
+
+    tablesEl.addEventListener("blur", e => {
+      if(!e.target.classList.contains("table-title")) return;
+      const table = e.target.closest(".table");
+      const raw = e.target.textContent.replace(/\s*\(\d+\/\d+\)\s*$/, "");
+      table.dataset.baseName = normalizeName(raw) || "Bàn";
+      e.target.contentEditable = false;
       updateTable(table);
-    } else {
-      unassigned.appendChild(createGuestLi(name));
+      saveState();
+    }, true);
+
+    document.addEventListener("click", e => {
+      document.querySelectorAll(".quick-add.active").forEach(box => {
+        const inside = box.contains(e.target);
+        const isBtn = e.target.closest(".quick-add-btn");
+        if(!inside && !isBtn) closeQuickAdd(box);
+      });
+    });
+
+    /* ================= Adjust max ================= */
+    document.getElementById("adjust-max").onclick = () => {
+      maxList.innerHTML = "";
+      document.querySelectorAll(".table").forEach((t,i) => {
+        const row = document.createElement("div");
+        row.className = "max-row";
+        row.innerHTML = `<label>${t.dataset.baseName}</label>
+          <input type="number" min="1" value="${t.dataset.max}" data-i="${i}">`;
+        maxList.appendChild(row);
+      });
+      maxModal.style.display = "flex";
+    };
+
+    document.getElementById("max-save").onclick = () => {
+      const bulk = parseInt(document.getElementById("bulk-max").value, 10);
+
+      if(!isNaN(bulk) && bulk > 0){
+        document.querySelectorAll(".table").forEach(t => {
+          t.dataset.max = String(bulk);
+          updateTable(t);
+        });
+      } else {
+        document.querySelectorAll("#max-list input").forEach(inp => {
+          const t = document.querySelectorAll(".table")[inp.dataset.i];
+          t.dataset.max = String(Math.max(1, parseInt(inp.value, 10) || 1));
+          updateTable(t);
+        });
+      }
+
+      maxModal.style.display = "none";
+      saveState();
+    };
+
+    document.getElementById("max-cancel").onclick = () => {
+      maxModal.style.display = "none";
+    };
+
+    /* ================= Save / Load ================= */
+    document.getElementById("save-btn").onclick = () => {
+      saveState();
+      alert("Đã lưu!");
+    };
+
+    document.getElementById("clear-btn").onclick = () => {
+      if(confirm("Xóa toàn bộ dữ liệu?")){
+        localStorage.removeItem("wedding_state");
+        location.reload();
+      }
+    };
+
+    function saveState(){
+      const state = {
+        tables: [...document.querySelectorAll(".table")].map(t => ({
+          name: t.dataset.baseName,
+          max: t.dataset.max,
+          guests: [...t.querySelectorAll(".guest-list li:not(.drag-placeholder)")]
+            .map(li => guestNameFromLi(li))
+        })),
+        unassigned: [...unassigned.querySelectorAll("li:not(.drag-placeholder)")]
+          .map(li => guestNameFromLi(li))
+      };
+      localStorage.setItem("wedding_state", JSON.stringify(state));
     }
-  });
 
-  saveState();
-  updateSummary();
-  updateUnassignedView();
+    (function load(){
+      const raw = localStorage.getItem("wedding_state");
+      if(!raw){
+        createTable("Bàn 1");
+        updateSummary();
+        return;
+      }
+      const s = JSON.parse(raw);
+      s.tables.forEach(t => createTable(t.name, t.max, t.guests));
+      s.unassigned.forEach(n => unassigned.appendChild(createGuestLi(n)));
+      document.querySelectorAll(".table").forEach(updateTable);
+      updateUnassignedView();
+    })();
 
-}
+    let deleteMode = false;
 
-/* ================= Help modal ================= */
-const helpModal = document.getElementById("help-modal");
-document.getElementById("help-btn").onclick = () => {
-  helpModal.style.display = "flex";
-};
-document.getElementById("help-close").onclick = () => {
-  helpModal.style.display = "none";
-};
+    const deleteBtn = document.getElementById("delete-mode-btn");
+    const deleteConfirmBtn = document.getElementById("delete-confirm-btn");
+    const deleteCancelBtn = document.getElementById("delete-cancel-btn");
 
-/* ================= Edit Guest Names Mode ================= */
+    deleteBtn.onclick = () => {
+      deleteMode = true;
+      clearSelectedGuest();
+      document.body.classList.add("delete-mode");
 
-let originalNames = new Map();
+      deleteBtn.classList.add("hidden");
+      deleteConfirmBtn.classList.remove("hidden");
+      deleteCancelBtn.classList.remove("hidden");
 
-const editBtn = document.getElementById("edit-names-btn");
-const editSave = document.getElementById("edit-names-save");
-const editCancel = document.getElementById("edit-names-cancel");
+      document.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => {
+        if(!li.querySelector(".delete-x")){
+          const x = document.createElement("span");
+          x.textContent = "✖";
+          x.className = "delete-x";
+          li.appendChild(x);
+        }
+        li.classList.remove("marked-delete");
+      });
+    };
 
-editBtn.onclick = () => {
-  editNamesMode = true;
-  document.body.classList.add("edit-names-mode");
+    deleteCancelBtn.onclick = () => {
+      deleteMode = false;
+      document.body.classList.remove("delete-mode");
 
-  // Khóa toolbar
-  document.getElementById("toolbar-blocker").style.display = "block";
+      deleteBtn.classList.remove("hidden");
+      deleteConfirmBtn.classList.add("hidden");
+      deleteCancelBtn.classList.add("hidden");
 
+      document.querySelectorAll(".delete-x").forEach(x => x.remove());
+      document.querySelectorAll(".marked-delete").forEach(li => li.classList.remove("marked-delete"));
+    };
 
-  // Chỉ 3 nút sửa tên hoạt động
-  editBtn.classList.add("hidden");
-  editSave.classList.remove("hidden");
-  editCancel.classList.remove("hidden");
+    deleteConfirmBtn.onclick = () => {
+      if(!confirm("Xóa các khách mời đã chọn?")) return;
 
-  // Lưu tên gốc
-  originalNames.clear();
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    originalNames.set(li, li.dataset.name);
-    li.contentEditable = "true";
-  });
+      document.querySelectorAll(".marked-delete").forEach(li => li.remove());
 
-  // Tắt kéo thả
-  document.querySelectorAll(".guest-list li").forEach(li => li.draggable = false);
+      deleteCancelBtn.onclick(); // reset mode
+      document.querySelectorAll(".table").forEach(updateTable);
+      saveState();
+      updateUnassignedView();
+    };
 
-  // ⭐ CẬP NHẬT LẠI "CHƯA SẮP XẾP" THEO CHẾ ĐỘ SỬA TÊN
-  updateUnassignedView();
-};
+    /* Click ✖ để đánh dấu */
+    document.addEventListener("click", e => {
+      if(!deleteMode) return;
+      if(e.target.classList.contains("delete-x")){
+        e.target.closest("li").classList.toggle("marked-delete");
+      }
+    });
 
-  
-editCancel.onclick = () => {
-  editNamesMode = false;
-  document.body.classList.remove("edit-names-mode");
+    /* ================= Import CSV ================= */
+    document.getElementById("import-btn").onclick = () => {
+      document.getElementById("import-csv").click();
+    };
 
-  // Mở lại toolbar
-  document.getElementById("toolbar-blocker").style.display = "none";
+    document.getElementById("import-csv").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if(!file) return;
 
-  // Khôi phục tên cũ
-  originalNames.forEach((oldName, li) => {
-    li.dataset.name = oldName;
-    li.textContent = oldName;
-    li.contentEditable = "false";
-  });
+      const reader = new FileReader();
+      reader.onload = () => parseCSV(reader.result);
+      reader.readAsText(file, "utf-8");
 
-  editBtn.classList.remove("hidden");
-  editSave.classList.add("hidden");
-  editCancel.classList.add("hidden");
+      e.target.value = "";
+    });
 
-  document.querySelectorAll(".guest-list li").forEach(li => li.draggable = true);
+    function parseCSV(text){
+      const lines = text.trim().split(/\r?\n/);
+      if(lines.length < 2) return alert("CSV không hợp lệ");
 
-  updateSummary();
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+      const idxName = headers.indexOf("tên khách");
+      const idxTable = headers.indexOf("bàn");
 
-  // ⭐ QUAN TRỌNG: rút gọn lại tên ở Chưa sắp xếp
-  updateUnassignedView();
-};
+      if(idxName === -1) return alert("CSV phải có cột 'Tên khách'");
 
+      lines.slice(1).forEach(line => {
+        const cols = line.split(",").map(c => stripQuotes(c));
+        const name = normalizeName(cols[idxName]);
+        if(!name) return;
 
-editSave.onclick = () => {
-  editNamesMode = false;
-  document.body.classList.remove("edit-names-mode");
+        if(idxTable !== -1 && cols[idxTable]){
+          const tableName = normalizeName(stripQuotes(cols[idxTable]));
+          let table = [...document.querySelectorAll(".table")]
+            .find(t => t.dataset.baseName === tableName);
 
-  // Mở lại toolbar
-  document.getElementById("toolbar-blocker").style.display = "none";
+          if(!table){
+            createTable(tableName);
+            table = [...document.querySelectorAll(".table")]
+              .find(t => t.dataset.baseName === tableName);
+          }
 
-  // Lưu tên mới
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    const newName = normalizeName(li.textContent.trim());
-    li.dataset.name = newName;
-    li.textContent = newName;
-    li.contentEditable = "false";
-    li.draggable = true;
-  });
+          table.querySelector(".guest-list").appendChild(createGuestLi(name));
+          updateTable(table);
+        } else {
+          unassigned.appendChild(createGuestLi(name));
+        }
+      });
 
-  editBtn.classList.remove("hidden");
-  editSave.classList.add("hidden");
-  editCancel.classList.add("hidden");
+      saveState();
+      updateSummary();
+      updateUnassignedView();
+    }
 
-  document.querySelectorAll(".table").forEach(updateTable);
-  saveState();
-  
-  // ⭐ QUAN TRỌNG: rút gọn lại tên ở Chưa sắp xếp
-  updateUnassignedView();
-};
+    /* ================= Help modal ================= */
+    const helpModal = document.getElementById("help-modal");
+    document.getElementById("help-btn").onclick = () => {
+      helpModal.style.display = "flex";
+    };
+    document.getElementById("help-close").onclick = () => {
+      helpModal.style.display = "none";
+    };
 
-</script>
-<script type="text/javascript" src="js/script.js"></script>
+    /* ================= Android: tap để chọn khách ================= */
+    document.addEventListener("click", e => {
+      if(!isAndroid) return;
+
+      const li = e.target.closest(".guest-list li");
+      if(!li || li.classList.contains("drag-placeholder")) return;
+
+      if(deleteMode) return;
+      if(editNamesMode) return;
+
+      if(selectedGuest === li){
+        clearSelectedGuest();
+        return;
+      }
+
+      clearSelectedGuest();
+      selectedGuest = li;
+      li.classList.add("selected-guest");
+    });
+
+    /* ================= Edit Guest Names Mode ================= */
+    let originalNames = new Map();
+
+    const editBtn = document.getElementById("edit-names-btn");
+    const editSave = document.getElementById("edit-names-save");
+    const editCancel = document.getElementById("edit-names-cancel");
+
+    editBtn.onclick = () => {
+      editNamesMode = true;
+      clearSelectedGuest();
+      document.body.classList.add("edit-names-mode");
+
+      document.getElementById("toolbar-blocker").style.display = "block";
+
+      editBtn.classList.add("hidden");
+      editSave.classList.remove("hidden");
+      editCancel.classList.remove("hidden");
+
+      originalNames.clear();
+      document.querySelectorAll(".guest-list li").forEach(li => {
+        originalNames.set(li, li.dataset.name);
+        li.contentEditable = "true";
+      });
+
+      document.querySelectorAll(".guest-list li").forEach(li => li.draggable = false);
+
+      updateUnassignedView();
+    };
+
+    editCancel.onclick = () => {
+      editNamesMode = false;
+      document.body.classList.remove("edit-names-mode");
+
+      document.getElementById("toolbar-blocker").style.display = "none";
+
+      originalNames.forEach((oldName, li) => {
+        li.dataset.name = oldName;
+        li.textContent = oldName;
+        li.contentEditable = "false";
+      });
+
+      editBtn.classList.remove("hidden");
+      editSave.classList.add("hidden");
+      editCancel.classList.add("hidden");
+
+      document.querySelectorAll(".guest-list li").forEach(li => {
+        li.draggable = !isAndroid;
+      });
+
+      updateSummary();
+      updateUnassignedView();
+    };
+
+    editSave.onclick = () => {
+      editNamesMode = false;
+      document.body.classList.remove("edit-names-mode");
+
+      document.getElementById("toolbar-blocker").style.display = "none";
+
+      document.querySelectorAll(".guest-list li").forEach(li => {
+        const newName = normalizeName(li.textContent.trim());
+        li.dataset.name = newName;
+        li.textContent = newName;
+        li.contentEditable = "false";
+        li.draggable = !isAndroid;
+      });
+
+      editBtn.classList.remove("hidden");
+      editSave.classList.add("hidden");
+      editCancel.classList.add("hidden");
+
+      document.querySelectorAll(".table").forEach(updateTable);
+      saveState();
+      updateUnassignedView();
+    };
+  </script>
 </body>
 </html>
