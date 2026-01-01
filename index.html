@@ -1161,15 +1161,21 @@ exportBtn.onclick = () => {
     exportMenu.style.display === "flex" ? "none" : "flex";
 };
 
+// Listener đóng export menu — BẢN SỬA
 document.addEventListener("click", e => {
-  if (
-    !exportMenu.contains(e.target) &&
-    e.target !== exportBtn &&
-    e.target.id !== "help-btn" && !e.target.closest(".modal")
-  ) {
-    exportMenu.style.display = "none";
-  }
+  // Nếu click vào chính export menu → không đóng
+  if (exportMenu.contains(e.target)) return;
+
+  // Nếu click vào nút mở export menu → không đóng
+  if (e.target === exportBtn) return;
+
+  // Nếu click vào bất kỳ modal nào → không đóng
+  if (e.target.closest(".modal")) return;
+
+  // Còn lại → đóng export menu
+  exportMenu.style.display = "none";
 });
+
 
 /* =======================
    EXPORT CSV
@@ -1275,12 +1281,17 @@ document.getElementById("export-pdf-all").onclick = () => {
 };
 
 /* =======================
-   EXPORT PDF 1 BÀN — MẪU C2
+   EXPORT PDF 1 BÀN — MẪU C2 (SANG TRỌNG)
    ======================= */
 
-document.getElementById("pdf-one-export").onclick = () => {
+document.getElementById("pdf-one-export").addEventListener("click", () => {
   const index = pdfTableSelect.value;
   const table = document.querySelectorAll(".table")[index];
+
+  if (!table) {
+    alert("Không tìm thấy bàn!");
+    return;
+  }
 
   const w = window.open("", "_blank");
 
@@ -1332,7 +1343,8 @@ document.getElementById("pdf-one-export").onclick = () => {
 
   w.print();
   pdfOneModal.style.display = "none";
-};
+});
+
 
 
 /* =======================
