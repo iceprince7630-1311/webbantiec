@@ -333,7 +333,7 @@
       backdrop-filter: blur(2px);
       z-index: 900;
       display: none;
-      pointer-events: auto;
+      pointer-events: none;
       border-radius: 0px 0px 10px 10px;
     }
 
@@ -859,14 +859,14 @@ if (!isAndroid) {
     clearDropHints();
     document.querySelectorAll(".table").forEach(updateTable);
     saveState();
-    updateUnassignedView();
+    setTimeout(updateUnassignedView, 0);
   });
 
   /* Kéo kết thúc */
   document.addEventListener("dragend", () => {
     placeholder.remove();
     clearDropHints();
-    updateUnassignedView();
+    setTimeout(updateUnassignedView, 0);
   });
 }
 /* =======================
@@ -946,7 +946,7 @@ if (isTouch && !isAndroid) {
     clearDropHints();
     document.querySelectorAll(".table").forEach(updateTable);
     saveState();
-    updateUnassignedView();
+    setTimeout(updateUnassignedView, 0);
   });
 
   /* Hủy kéo */
@@ -961,7 +961,7 @@ if (isTouch && !isAndroid) {
     touchItem = null;
     placeholder.remove();
     clearDropHints();
-    updateUnassignedView();
+    setTimeout(updateUnassignedView, 0);
   });
 }
 /* =======================
@@ -976,17 +976,17 @@ document.addEventListener("click", e => {
   const li = e.target.closest(".guest-list li");
   if (!li || li.classList.contains("drag-placeholder")) return;
 
-  /* Không chọn khi đang xóa hoặc sửa tên */
+  // Không chọn khi đang xóa hoặc sửa tên
   if (deleteMode) return;
   if (editNamesMode) return;
 
-  /* Bấm lại để bỏ chọn */
+  // Bấm lại để bỏ chọn
   if (selectedGuest === li) {
     clearSelectedGuest();
     return;
   }
 
-  /* Chọn khách */
+  // Chọn khách
   clearSelectedGuest();
   selectedGuest = li;
   li.classList.add("selected-guest");
@@ -999,10 +999,10 @@ tablesEl.addEventListener("click", e => {
   const table = e.target.closest(".table");
   if (!table) return;
 
-  /* Không xử lý nếu không có khách được chọn */
+  // Không xử lý nếu không có khách được chọn
   if (!selectedGuest) return;
 
-  /* Không xử lý khi đang sửa tên hoặc xóa */
+  // Không xử lý khi đang sửa tên hoặc xóa
   if (editNamesMode || deleteMode) return;
 
   const list = table.querySelector(".guest-list");
@@ -1014,7 +1014,7 @@ tablesEl.addEventListener("click", e => {
     return;
   }
 
-  /* Chuyển khách vào bàn */
+  // Chuyển khách vào bàn
   list.appendChild(selectedGuest);
   clearSelectedGuest();
 
@@ -1022,6 +1022,7 @@ tablesEl.addEventListener("click", e => {
   saveState();
   updateUnassignedView();
 });
+
 
 /* Android: chặn mọi hành vi kéo‑thả mặc định */
 if (isAndroid) {
@@ -1113,7 +1114,7 @@ editBtn.onclick = () => {
   document.body.classList.add("edit-names-mode");
 
   // Khóa toolbar
-  document.getElementById("toolbar-blocker").style.display = "block";
+  document.getElementById("toolbar-blocker").style.pointerEvents = "auto";
 
   editBtn.classList.add("hidden");
   editSave.classList.remove("hidden");
@@ -1145,7 +1146,7 @@ editCancel.onclick = () => {
   // 2) Tắt chế độ sửa
   editNamesMode = false;
   document.body.classList.remove("edit-names-mode");
-  document.getElementById("toolbar-blocker").style.display = "none";
+  document.getElementById("toolbar-blocker").style.pointerEvents = "none";
 
   // 3) Khôi phục draggable
   document.querySelectorAll(".guest-list li").forEach(li => {
@@ -1173,7 +1174,7 @@ editSave.onclick = () => {
   // 2) Tắt chế độ sửa
   editNamesMode = false;
   document.body.classList.remove("edit-names-mode");
-  document.getElementById("toolbar-blocker").style.display = "none";
+  document.getElementById("toolbar-blocker").style.pointerEvents = "none";
 
   // 3) Khôi phục draggable
   document.querySelectorAll(".guest-list li").forEach(li => {
@@ -1394,9 +1395,70 @@ document.getElementById("pdf-one-export").onclick = () => {
 
   window.print();
 
+  printRoot.innerHTML = "";
   printRoot.style.display = "none";
+
   pdfOneModal.style.display = "none";
 };
+
+   tablesEl.addEventListener("click", e => {
+  const table = e.target.closest(".table");
+  if (!table) return;
+
+  if (e.target.classList.contains("delete-table-btn")) {
+    if (confirm("Xóa bàn này?")) {
+      table.remove();
+      updateSummary();
+      saveState();
+    }
+  }
+
+  if (e.target.classList.contains("edit-table-btn")) {
+    const newName = prompt("Tên bàn:", table.dataset.baseName);
+    if (newName) {
+      table.dataset.baseName = normalizeName(newName);
+      updateTable(table);
+      saveState();
+    }
+  }
+
+  if (e.target.classList.contains("quick-add-btn")) {
+    const box = table.querySelector(".quick-add");
+    box.classList.toggle("hidden");
+    const input = box.querySelector(".quick-add-input");
+    input.focus();
+
+    input.onkeydown = ev => {
+      if (ev.key === "Enter") {
+        const name = normalizeName(input.value);
+        if (name) {
+          table.querySelector(".guest-list").appendChild(createGuestLi(name));
+          updateTable(table);
+          saveState();
+        }
+        input.value = "";
+        box.classList.add("hidden");
+      }
+      if (ev.key === "Escape") {
+        box.classList.add("hidden");
+      }
+    };
+  }
+
+  if (e.target.classList.contains("auto-fix-btn")) {
+    const list = table.querySelector(".guest-list");
+    const max = parseInt(table.dataset.max, 10);
+    const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
+
+    while (items.length > max) {
+      unassigned.appendChild(items.pop());
+    }
+
+    updateTable(table);
+    updateUnassignedView();
+    saveState();
+  }
+});
 
   </script>
 </body>
