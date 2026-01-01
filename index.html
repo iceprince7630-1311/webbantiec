@@ -276,25 +276,32 @@
       padding:10px;
     }
 
-    /* Modal */
-    .modal{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.4);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:1000;
-    }
-    .modal-content{
-      background:#fff;
-      padding:16px;
-      border-radius:14px;
-      width:360px;
-      max-width:90vw;
-      max-height:80vh;
-      overflow:auto;
-    }
+  /* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: auto; /* CHO PHÉP CLICK */
+}
+
+.modal-content {
+  background: #fff;
+  padding: 16px;
+  border-radius: 14px;
+  width: 360px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow: auto;
+
+  position: relative;     /* GIÚP NÚT NHẬN CLICK */
+  z-index: 2001;          /* ĐẶT TRÊN OVERLAY */
+  pointer-events: auto;   /* CHO PHÉP CLICK */
+}
+
 
     /* Print */
     @media print{
