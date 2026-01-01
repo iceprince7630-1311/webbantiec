@@ -159,7 +159,17 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
 .edit-names-mode .guest-list li.dragging {
   opacity: 1 !important;
 }
-  
+
+.toolbar.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.toolbar .edit-only {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
 </style>
 <link type="text/css" rel="stylesheet" href="css/style.css"/>
 </head>
@@ -173,9 +183,9 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
     <button id="add-table">+</button>
     <button id="adjust-max" class="btn">⚙️ Chỉnh max</button>
     
-    <button id="edit-names-btn" class="btn">✏️ Sửa tên khách</button>
-    <button id="edit-names-save" class="btn hidden">💾 Áp dụng</button>
-    <button id="edit-names-cancel" class="btn hidden">❌ Hủy</button>
+    <button id="edit-names-btn" class="btn edit-only">✏️ Sửa tên khách</button>
+    <button id="edit-names-save" class="btn hidden edit-only">💾 Đồng ý</button>
+    <button id="edit-names-cancel" class="btn hidden edit-only">❌ Hủy</button>
 
     <button id="save-btn" class="btn">💾 Lưu</button>
     <button id="clear-btn" class="btn">🧹 Xóa</button>
@@ -1033,7 +1043,7 @@ document.getElementById("help-close").onclick = () => {
 /* ================= Edit Guest Names Mode ================= */
 
 let editNamesMode = false;
-let originalNames = new Map(); // lưu tên cũ để hủy
+let originalNames = new Map();
 
 const editBtn = document.getElementById("edit-names-btn");
 const editSave = document.getElementById("edit-names-save");
@@ -1043,7 +1053,10 @@ editBtn.onclick = () => {
   editNamesMode = true;
   document.body.classList.add("edit-names-mode");
 
-  // Ẩn/hiện nút
+  // Khóa toolbar
+  document.querySelector(".toolbar").classList.add("disabled");
+
+  // Chỉ 3 nút sửa tên hoạt động
   editBtn.classList.add("hidden");
   editSave.classList.remove("hidden");
   editCancel.classList.remove("hidden");
@@ -1055,13 +1068,16 @@ editBtn.onclick = () => {
     li.contentEditable = "true";
   });
 
-  // Chặn kéo thả
+  // Tắt kéo thả
   document.querySelectorAll(".guest-list li").forEach(li => li.draggable = false);
 };
 
 editCancel.onclick = () => {
   editNamesMode = false;
   document.body.classList.remove("edit-names-mode");
+
+  // Mở lại toolbar
+  document.querySelector(".toolbar").classList.remove("disabled");
 
   // Khôi phục tên cũ
   originalNames.forEach((oldName, li) => {
@@ -1070,20 +1086,20 @@ editCancel.onclick = () => {
     li.contentEditable = "false";
   });
 
-  // Reset nút
   editBtn.classList.remove("hidden");
   editSave.classList.add("hidden");
   editCancel.classList.add("hidden");
 
-  // Bật lại kéo thả
   document.querySelectorAll(".guest-list li").forEach(li => li.draggable = true);
-
   updateSummary();
 };
 
 editSave.onclick = () => {
   editNamesMode = false;
   document.body.classList.remove("edit-names-mode");
+
+  // Mở lại toolbar
+  document.querySelector(".toolbar").classList.remove("disabled");
 
   // Lưu tên mới
   document.querySelectorAll(".guest-list li").forEach(li => {
@@ -1094,7 +1110,6 @@ editSave.onclick = () => {
     li.draggable = true;
   });
 
-  // Reset nút
   editBtn.classList.remove("hidden");
   editSave.classList.add("hidden");
   editCancel.classList.add("hidden");
