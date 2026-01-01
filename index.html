@@ -217,8 +217,64 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
   position: relative;
   z-index: 1001;
 }
+
+/* ============================
+   SIDEBAR FIX & OPTIMIZATION
+   ============================ */
+
+/* Giữ nguyên layout sidebar cũ, chỉ thêm scroll */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  overflow: hidden; /* để phần dưới scroll */
+}
+
+/* --- CHƯA SẮP XẾP: scroll độc lập --- */
+#unassigned-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+  border-radius: 12px;
+}
+
+/* Header cố định khi scroll */
+#unassigned-wrapper-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  z-index: 5;
+}
+
+/* --- THÊM KHÁCH: tối ưu cho Android --- */
+.quick-add {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-top: 8px;
+
+  /* KHÔNG dùng sticky vì Android xử lý rất tệ */
+  position: relative;
+}
+
+/* Textarea tối ưu cho mobile */
+.quick-add textarea {
+  height: 90px;
+  max-height: 140px;
+  resize: vertical;
+}
+
+/* Đảm bảo nút ẩn thực sự ẩn */
+.hidden {
+  display: none !important;
+}
+ 
 </style>
-  
+/* -------------------------------------------------------------------------------------------------------------------------------------- */ 
 <link type="text/css" rel="stylesheet" href="css/style.css"/>
   
 </head>
@@ -268,27 +324,23 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
   <!-- SIDEBAR -->
   <div class="sidebar">
 
-    <!-- CHƯA SẮP XẾP -->
-    <div id="unassigned-wrapper">
-      <div id="unassigned-wrapper-header">
-        <h3>Chưa sắp xếp</h3>
-        <div>
-          <button id="delete-mode-btn" class="btn">🗑️</button>
-          <button id="delete-confirm-btn" class="btn hidden">✅</button>
-          <button id="delete-cancel-btn" class="btn hidden">❌</button>
-        </div>
+  <div id="unassigned-wrapper">
+    <div id="unassigned-wrapper-header">
+      <h3>Chưa sắp xếp</h3>
+      <div>
+        <button id="delete-mode-btn" class="btn">🗑️</button>
+        <button id="delete-confirm-btn" class="btn hidden">✅</button>
+        <button id="delete-cancel-btn" class="btn hidden">❌</button>
       </div>
-
-      <ul class="guest-list" id="unassigned"></ul>
     </div>
 
-    <!-- THÊM KHÁCH -->
-    <div class="card quick-add">
-      <h3>Thêm khách</h3>
-      <textarea id="guest-input" placeholder="Mỗi dòng là 1 tên..."></textarea>
-      <button id="add-guest" class="btn">Thêm</button>
-    </div>
+    <ul class="guest-list" id="unassigned"></ul>
+  </div>
 
+  <div class="card quick-add">
+    <h3>Thêm khách</h3>
+    <textarea id="guest-input" placeholder="Mỗi dòng là 1 tên..."></textarea>
+    <button id="add-guest" class="btn">Thêm</button>
   </div>
 
 </div>
