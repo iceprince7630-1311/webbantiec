@@ -272,9 +272,63 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
 .hidden {
   display: none !important;
 }
- 
-</style>
+/* Sidebar: giữ layout cột, KHÔNG dùng overflow:hidden để không phá sticky */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 100vh;
+}
+
+/* Card "Chưa sắp xếp" chiếm phần còn lại, bên trong có vùng scroll */
+.unassigned-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* cho phép flex child scroll đúng */
+}
+
+/* Header "Chưa sắp xếp" */
+.unassigned-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eee;
+}
+
+/* Vùng scroll cho danh sách chưa sắp xếp */
+.unassigned-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Thêm khách: sticky ở trên, tối ưu cho Android */
+.quick-add {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+}
+
+/* Textarea Thêm khách: chiều cao vừa phải trên mobile */
+.quick-add textarea {
+  height: 90px;
+  max-height: 140px;
+  resize: vertical;
+}
+
+/* Đảm bảo nút hidden thực sự ẩn (fix vụ nút lộ ra) */
+.hidden {
+  display: none !important;
+}
+  
 /* -------------------------------------------------------------------------------------------------------------------------------------- */ 
+</style>
+
 <link type="text/css" rel="stylesheet" href="css/style.css"/>
   
 </head>
@@ -324,8 +378,16 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
   <!-- SIDEBAR -->
   <div class="sidebar">
 
-  <div id="unassigned-wrapper">
-    <div id="unassigned-wrapper-header">
+  <!-- THÊM KHÁCH LUÔN TRÊN CÙNG -->
+  <div class="card quick-add">
+    <h3>Thêm khách</h3>
+    <textarea id="guest-input" placeholder="Mỗi dòng là 1 tên..."></textarea>
+    <button id="add-guest" class="btn">Thêm</button>
+  </div>
+
+  <!-- CHƯA SẮP XẾP TRONG CARD RIÊNG, CÓ SCROLL -->
+  <div class="card unassigned-card">
+    <div class="unassigned-header">
       <h3>Chưa sắp xếp</h3>
       <div>
         <button id="delete-mode-btn" class="btn">🗑️</button>
@@ -334,13 +396,9 @@ textarea{width:100%;height:120px;border-radius:8px;padding:8px}
       </div>
     </div>
 
-    <ul class="guest-list" id="unassigned"></ul>
-  </div>
-
-  <div class="card quick-add">
-    <h3>Thêm khách</h3>
-    <textarea id="guest-input" placeholder="Mỗi dòng là 1 tên..."></textarea>
-    <button id="add-guest" class="btn">Thêm</button>
+    <div class="unassigned-scroll">
+      <ul class="guest-list" id="unassigned"></ul>
+    </div>
   </div>
 
 </div>
