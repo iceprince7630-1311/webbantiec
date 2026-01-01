@@ -367,12 +367,15 @@ function updateUnassignedView(){
   const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
   const count = items.length;
 
-  // Reset hiển thị đầy đủ
+  // Luôn reset về tên đầy đủ trước
   items.forEach(li => li.textContent = li.dataset.name);
 
-  // Dưới 20 khách → giữ nguyên
+  // Nếu dưới 20 khách → giữ nguyên, không chia cột
   if(count < 20){
     list.style.display = "block";
+    list.style.gridTemplateColumns = "";
+    list.style.maxHeight = "";
+    list.style.overflowY = "";
     return;
   }
 
@@ -381,18 +384,13 @@ function updateUnassignedView(){
     li.textContent = shortName(li.dataset.name);
   });
 
-  // Chia cột theo số lượng
-  let columns = 1;
-  if(count < 40) columns = 2;
-  else if(count < 60) columns = 3;
-  else columns = 3; // 60+ vẫn 3 cột
-
+  // Luôn chỉ dùng 2 cột
   list.style.display = "grid";
-  list.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+  list.style.gridTemplateColumns = "repeat(2, 1fr)";
   list.style.columnGap = "10px";
 
-  // Nếu trên 60 khách → chia trang (scroll theo trang)
-  if(count >= 60){
+  // Nếu trên 40 khách → chia trang bằng scroll
+  if(count > 40){
     list.style.maxHeight = "600px";
     list.style.overflowY = "auto";
   } else {
