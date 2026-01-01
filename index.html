@@ -1288,10 +1288,38 @@ document.getElementById("export-pdf-all").onclick = () => {
 };
 
 /* =======================
-   EXPORT PDF 1 BÀN — MẪU C2 (SANG TRỌNG)
+   KHAI BÁO BIẾN MODAL PDF 1 BÀN
    ======================= */
+const pdfOneModal = document.getElementById("pdf-one-modal");
+const pdfTableSelect = document.getElementById("pdf-table-select");
+const pdfOneExportBtn = document.getElementById("pdf-one-export");
 
-document.getElementById("pdf-one-export").addEventListener("click", () => {
+/* =======================
+   MỞ MODAL PDF 1 BÀN
+   ======================= */
+document.getElementById("export-pdf-one").onclick = () => {
+  pdfTableSelect.innerHTML = "";
+  document.querySelectorAll(".table").forEach((t, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = t.dataset.baseName;
+    pdfTableSelect.appendChild(opt);
+  });
+
+  pdfOneModal.style.display = "flex";
+};
+
+/* =======================
+   ĐÓNG MODAL PDF 1 BÀN
+   ======================= */
+document.getElementById("pdf-one-cancel").onclick = () => {
+  pdfOneModal.style.display = "none";
+};
+
+/* =======================
+   EXPORT PDF 1 BÀN — MẪU C2
+   ======================= */
+pdfOneExportBtn.onclick = () => {
   const index = pdfTableSelect.value;
   const table = document.querySelectorAll(".table")[index];
 
@@ -1338,7 +1366,6 @@ document.getElementById("pdf-one-export").addEventListener("click", () => {
   `;
 
   w.document.write("<html><head>" + css + "</head><body>");
-
   w.document.write(`<div class="page"><h1>${table.dataset.baseName}</h1><ul>`);
 
   [...table.querySelectorAll(".guest-list li:not(.drag-placeholder)")].forEach(li => {
@@ -1350,7 +1377,7 @@ document.getElementById("pdf-one-export").addEventListener("click", () => {
 
   w.print();
   pdfOneModal.style.display = "none";
-});
+};
 
 
 
