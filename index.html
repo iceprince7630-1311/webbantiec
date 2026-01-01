@@ -354,6 +354,53 @@ function guestNameFromLi(li){
   return li.dataset.name || normalizeName(li.textContent);
 }
 
+/* ================= Shortening Name ================= */
+function shortName(full){
+  const parts = full.trim().split(/\s+/);
+  if(parts.length <= 2) return full;
+  return parts.slice(-2).join(" ");
+}
+
+/* ================= Update Unassigned View if it's too long ================= */
+function updateUnassignedView(){
+  const list = document.getElementById("unassigned");
+  const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
+  const count = items.length;
+
+  // Reset hiển thị đầy đủ
+  items.forEach(li => li.textContent = li.dataset.name);
+
+  // Dưới 20 khách → giữ nguyên
+  if(count < 20){
+    list.style.display = "block";
+    return;
+  }
+
+  // Từ 20 khách trở lên → rút gọn tên
+  items.forEach(li => {
+    li.textContent = shortName(li.dataset.name);
+  });
+
+  // Chia cột theo số lượng
+  let columns = 1;
+  if(count < 40) columns = 2;
+  else if(count < 60) columns = 3;
+  else columns = 3; // 60+ vẫn 3 cột
+
+  list.style.display = "grid";
+  list.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+  list.style.columnGap = "10px";
+
+  // Nếu trên 60 khách → chia trang (scroll theo trang)
+  if(count >= 60){
+    list.style.maxHeight = "600px";
+    list.style.overflowY = "auto";
+  } else {
+    list.style.maxHeight = "";
+    list.style.overflowY = "";
+  }
+}
+  
 /* ================= Summary ================= */
 function updateSummary(){
   document.getElementById("total-tables").textContent =
@@ -608,8 +655,8 @@ if(isTouch){
 
     document.querySelectorAll(".table").forEach(updateTable);
     saveState();
+    updateUnassignedView();
   }, {passive:true});
-  updateUnassignedView();
 
   document.addEventListener("touchcancel", () => {
     if(ghost) ghost.remove();
@@ -618,8 +665,8 @@ if(isTouch){
     tDragged = null;
     placeholder.remove();
     clearDropHints();
+    updateUnassignedView();
   }, {passive:true});
-  updateUnassignedView();
 }
 
 /* ================= Drop hints ================= */
@@ -1142,53 +1189,6 @@ editSave.onclick = () => {
   document.querySelectorAll(".table").forEach(updateTable);
   saveState();
 };
-
-/* ================= Shortening Name ================= */
-function shortName(full){
-  const parts = full.trim().split(/\s+/);
-  if(parts.length <= 2) return full;
-  return parts.slice(-2).join(" ");
-}
-
-/* ================= Update Unassigned View if it's too long ================= */
-function updateUnassignedView(){
-  const list = document.querySelector("#unassigned .guest-list");
-  const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
-  const count = items.length;
-
-  // Reset hiển thị đầy đủ
-  items.forEach(li => li.textContent = li.dataset.name);
-
-  // Dưới 20 khách → giữ nguyên
-  if(count < 20){
-    list.style.display = "block";
-    return;
-  }
-
-  // Từ 20 khách trở lên → rút gọn tên
-  items.forEach(li => {
-    li.textContent = shortName(li.dataset.name);
-  });
-
-  // Chia cột theo số lượng
-  let columns = 1;
-  if(count < 40) columns = 2;
-  else if(count < 60) columns = 3;
-  else columns = 3; // 60+ vẫn 3 cột
-
-  list.style.display = "grid";
-  list.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-  list.style.columnGap = "10px";
-
-  // Nếu trên 60 khách → chia trang (scroll theo trang)
-  if(count >= 60){
-    list.style.maxHeight = "600px";
-    list.style.overflowY = "auto";
-  } else {
-    list.style.maxHeight = "";
-    list.style.overflowY = "";
-  }
-}
 
 </script>
 <script type="text/javascript" src="js/script.js"></script>
