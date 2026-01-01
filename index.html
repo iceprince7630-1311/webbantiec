@@ -440,6 +440,12 @@ function createTable(name, max = 10, guests = []){
 
 function updateTable(table){
   const list = table.querySelector(".guest-list");
+
+  // ⭐ KHÔI PHỤC TÊN ĐẦY ĐỦ CHO KHÁCH TRONG BÀN
+  list.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
+    li.textContent = li.dataset.name;
+  });
+
   const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
   const max = parseInt(table.dataset.max, 10);
   const name = normalizeName(table.dataset.baseName || "Bàn");
@@ -456,8 +462,10 @@ function updateTable(table){
     warning.classList.add("hidden");
     warning.innerHTML = "";
   }
+
   updateSummary();
 }
+
 
 /* ================= Add ================= */
 document.getElementById("add-table").onclick = () => {
@@ -471,7 +479,7 @@ document.getElementById("add-guest").onclick = () => {
   saveState();
 };
 
-/* ================= Drag desktop ================= */
+/* ================= Drag & Drop desktop ================= */
 let draggedItem = null;
 const placeholder = document.createElement("li");
 placeholder.className = "drag-placeholder";
@@ -507,6 +515,7 @@ document.addEventListener("drop", e => {
   if(!list || !draggedItem) return;
   e.preventDefault();
   list.insertBefore(draggedItem, placeholder);
+  draggedItem.textContent = draggedItem.dataset.name;
   placeholder.remove();
   draggedItem.classList.remove("dragging");
   draggedItem = null;
@@ -638,6 +647,7 @@ if(isTouch){
     const targetList = placeholder.closest(".guest-list");
     if(targetList){
       targetList.insertBefore(tDragged, placeholder);
+      tDragged.textContent = tDragged.dataset.name;
     }
 
     placeholder.remove();
@@ -659,12 +669,19 @@ if(isTouch){
   document.addEventListener("touchcancel", () => {
     if(ghost) ghost.remove();
     ghost = null;
-    if(tDragged) tDragged.classList.remove("dragging");
+
+    if(tDragged){
+      tDragged.classList.remove("dragging");
+      tDragged.textContent = tDragged.dataset.name;
+    }
+
     tDragged = null;
+
     placeholder.remove();
     clearDropHints();
     updateUnassignedView();
   }, {passive:true});
+
 }
 
 /* ================= Drop hints ================= */
