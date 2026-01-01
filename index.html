@@ -368,28 +368,32 @@ function updateUnassignedView(){
   const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
   const count = items.length;
 
-  // Luôn reset về tên đầy đủ trước
+  // ⭐ Luôn reset về tên đầy đủ trước
   items.forEach(li => li.textContent = li.dataset.name);
 
   // ⭐ Nếu đang sửa tên → KHÔNG rút gọn, nhưng vẫn chia cột
   if(editNamesMode){
-    // Giữ nguyên tên đầy đủ
-    // Nhưng vẫn áp dụng layout 2 cột nếu nhiều khách
     if(count < 20){
       list.style.display = "block";
       list.style.gridTemplateColumns = "";
-      return;
+      list.style.maxHeight = "";
+      list.style.overflowY = "";
+    } else {
+      list.style.display = "grid";
+      list.style.gridTemplateColumns = "repeat(2, 1fr)";
+      list.style.columnGap = "10px";
+      list.style.maxHeight = "";
+      list.style.overflowY = "";
     }
-
-    list.style.display = "grid";
-    list.style.gridTemplateColumns = "repeat(2, 1fr)";
-    list.style.columnGap = "10px";
-    return;
+    return; // ⭐ QUAN TRỌNG: không chạy xuống phần rút gọn
   }
 
-  // Nếu dưới 20 khách → 1 cột
+  // ⭐ Nếu dưới 20 khách → giữ nguyên
   if(count < 20){
     list.style.display = "block";
+    list.style.gridTemplateColumns = "";
+    list.style.maxHeight = "";
+    list.style.overflowY = "";
     return;
   }
 
@@ -398,12 +402,12 @@ function updateUnassignedView(){
     li.textContent = shortName(li.dataset.name);
   });
 
-  // Luôn 2 cột
+  // ⭐ Luôn 2 cột
   list.style.display = "grid";
   list.style.gridTemplateColumns = "repeat(2, 1fr)";
   list.style.columnGap = "10px";
 
-  // Scroll nếu > 40 khách
+  // ⭐ Scroll nếu > 40 khách
   if(count > 40){
     list.style.maxHeight = "600px";
     list.style.overflowY = "auto";
@@ -412,6 +416,7 @@ function updateUnassignedView(){
     list.style.overflowY = "";
   }
 }
+
 
   
 /* ================= Summary ================= */
