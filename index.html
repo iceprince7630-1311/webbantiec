@@ -1303,6 +1303,7 @@ editBtn.onclick = () => {
   document.querySelectorAll(".guest-list li").forEach(li => {
     originalNames.set(li, li.dataset.name);
     li.contentEditable = "true";
+    li.draggable = false;
   });
 
   // Tắt kéo thả
@@ -1325,6 +1326,7 @@ editCancel.onclick = () => {
     li.dataset.name = oldName;
     li.textContent = oldName;
     li.contentEditable = "false";
+    li.draggable = true;
   });
 
   editBtn.classList.remove("hidden");
