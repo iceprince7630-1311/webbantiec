@@ -276,32 +276,25 @@
       padding:10px;
     }
 
-  /* Modal */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.4);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  pointer-events: auto; /* CHO PHÉP CLICK */
-}
-
-.modal-content {
-  background: #fff;
-  padding: 16px;
-  border-radius: 14px;
-  width: 360px;
-  max-width: 90vw;
-  max-height: 80vh;
-  overflow: auto;
-
-  position: relative;     /* GIÚP NÚT NHẬN CLICK */
-  z-index: 2001;          /* ĐẶT TRÊN OVERLAY */
-  pointer-events: auto;   /* CHO PHÉP CLICK */
-}
-
+    /* Modal */
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.4);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:1000;
+    }
+    .modal-content{
+      background:#fff;
+      padding:16px;
+      border-radius:14px;
+      width:360px;
+      max-width:90vw;
+      max-height:80vh;
+      overflow:auto;
+    }
 
     /* Print */
     @media print{
@@ -1036,18 +1029,8 @@ editSave.onclick = () => {
 <!-- =======================
      PHẦN 5 — SAVE / LOAD / IMPORT / EXPORT / ADD TABLE / MAX / MOVE
      ======================= -->
+
 <script>
-/* =======================
-   KHAI BÁO BIẾN TOÀN CỤC
-   ======================= */
-const exportBtn = document.getElementById("export-btn");
-const exportMenu = document.getElementById("export-menu");
-const unassigned = document.getElementById("unassigned");
-
-const pdfOneModal = document.getElementById("pdf-one-modal");
-const pdfTableSelect = document.getElementById("pdf-table-select");
-const pdfOneExportBtn = document.getElementById("pdf-one-export");
-
 /* =======================
    SAVE / LOAD
    ======================= */
@@ -1178,32 +1161,41 @@ exportBtn.onclick = () => {
     exportMenu.style.display === "flex" ? "none" : "flex";
 };
 
-// Listener đóng export menu
 document.addEventListener("click", e => {
-  if (exportMenu.contains(e.target)) return;
-  if (e.target === exportBtn) return;
-  if (e.target.closest(".modal")) return;
-  exportMenu.style.display = "none";
+  if (
+    !exportMenu.contains(e.target) &&
+    e.target !== exportBtn &&
+    e.target.id !== "help-btn" && !e.target.closest(".modal")
+  ) {
+    exportMenu.style.display = "none";
+  }
 });
 
 /* =======================
-   MỞ MODAL PDF 1 BÀN
+   EXPORT CSV
    ======================= */
 
-document.getElementById("export-pdf-one").onclick = () => {
-  pdfTableSelect.innerHTML = "";
-  document.querySelectorAll(".table").forEach((t, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = t.dataset.baseName;
-    pdfTableSelect.appendChild(opt);
+document.getElementById("export-csv").onclick = () => {
+  exportMenu.style.display = "none";
+
+  let rows = [["Tên khách", "Bàn"]];
+  document.querySelectorAll(".table").forEach(t => {
+    const tableName = t.dataset.baseName;
+    t.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => {
+      rows.push([li.dataset.name, tableName]);
+    });
   });
 
-  pdfOneModal.style.display = "flex";
-};
+  unassigned.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
+    rows.push([li.dataset.name, ""]);
+  });
 
-document.getElementById("pdf-one-cancel").onclick = () => {
-  pdfOneModal.style.display = "none";
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "danhsach.csv";
+  a.click();
 };
 
 /* =======================
@@ -1213,27 +1205,56 @@ document.getElementById("pdf-one-cancel").onclick = () => {
 document.getElementById("export-pdf-all").onclick = () => {
   exportMenu.style.display = "none";
 
+  // Tạo cửa sổ mới
   const w = window.open("", "_blank");
 
+  // CSS sang trọng
   const css = `
     <style>
-      body { font-family: "Times New Roman", serif; margin: 0; padding: 0; }
-      .page { width: 100%; padding: 40px 30px; box-sizing: border-box;
-              page-break-after: always; border: 2px solid #000; margin: 20px auto; }
-      h1 { text-align: center; font-size: 32px; margin: 0 0 20px 0; letter-spacing: 1px; }
-      ul { list-style: none; padding: 0; margin: 0; font-size: 20px; line-height: 1.6; }
-      ul li::before { content: "• "; font-size: 24px; }
+      body {
+        font-family: "Times New Roman", serif;
+        margin: 0;
+        padding: 0;
+      }
+      .page {
+        width: 100%;
+        padding: 40px 30px;
+        box-sizing: border-box;
+        page-break-after: always;
+        border: 2px solid #000;
+        margin: 20px auto;
+      }
+      h1 {
+        text-align: center;
+        font-size: 32px;
+        margin: 0 0 20px 0;
+        letter-spacing: 1px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.6;
+      }
+      ul li::before {
+        content: "• ";
+        font-size: 24px;
+      }
     </style>
   `;
 
+  // Bắt đầu HTML
   w.document.write("<html><head>" + css + "</head><body>");
 
+  // 1) Trang "Chưa sắp xếp"
   w.document.write(`<div class="page"><h1>CHƯA SẮP XẾP</h1><ul>`);
   [...unassigned.querySelectorAll("li:not(.drag-placeholder)")].forEach(li => {
     w.document.write(`<li>${li.dataset.name}</li>`);
   });
   w.document.write("</ul></div>");
 
+  // 2) Mỗi bàn = 1 trang
   document.querySelectorAll(".table").forEach(t => {
     const name = t.dataset.baseName;
     w.document.write(`<div class="page"><h1>${name}</h1><ul>`);
@@ -1245,8 +1266,11 @@ document.getElementById("export-pdf-all").onclick = () => {
     w.document.write("</ul></div>");
   });
 
+  // Kết thúc
   w.document.write("</body></html>");
   w.document.close();
+
+  // In
   w.print();
 };
 
@@ -1254,29 +1278,49 @@ document.getElementById("export-pdf-all").onclick = () => {
    EXPORT PDF 1 BÀN — MẪU C2
    ======================= */
 
-pdfOneExportBtn.onclick = () => {
+document.getElementById("pdf-one-export").onclick = () => {
   const index = pdfTableSelect.value;
   const table = document.querySelectorAll(".table")[index];
-
-  if (!table) {
-    alert("Không tìm thấy bàn!");
-    return;
-  }
 
   const w = window.open("", "_blank");
 
   const css = `
     <style>
-      body { font-family: "Times New Roman", serif; margin: 0; padding: 0; }
-      .page { width: 100%; padding: 40px 30px; box-sizing: border-box;
-              page-break-after: always; border: 2px solid #000; margin: 20px auto; }
-      h1 { text-align: center; font-size: 32px; margin: 0 0 20px 0; letter-spacing: 1px; }
-      ul { list-style: none; padding: 0; margin: 0; font-size: 20px; line-height: 1.6; }
-      ul li::before { content: "• "; font-size: 24px; }
+      body {
+        font-family: "Times New Roman", serif;
+        margin: 0;
+        padding: 0;
+      }
+      .page {
+        width: 100%;
+        padding: 40px 30px;
+        box-sizing: border-box;
+        page-break-after: always;
+        border: 2px solid #000;
+        margin: 20px auto;
+      }
+      h1 {
+        text-align: center;
+        font-size: 32px;
+        margin: 0 0 20px 0;
+        letter-spacing: 1px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.6;
+      }
+      ul li::before {
+        content: "• ";
+        font-size: 24px;
+      }
     </style>
   `;
 
   w.document.write("<html><head>" + css + "</head><body>");
+
   w.document.write(`<div class="page"><h1>${table.dataset.baseName}</h1><ul>`);
 
   [...table.querySelectorAll(".guest-list li:not(.drag-placeholder)")].forEach(li => {
@@ -1285,10 +1329,11 @@ pdfOneExportBtn.onclick = () => {
 
   w.document.write("</ul></div></body></html>");
   w.document.close();
-  w.print();
 
+  w.print();
   pdfOneModal.style.display = "none";
 };
+
 
 /* =======================
    THÊM BÀN
