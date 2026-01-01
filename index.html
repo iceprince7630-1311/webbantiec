@@ -11,7 +11,8 @@
       margin:0;
       font-family:Arial,Helvetica,sans-serif;
       background:#f4f6fb;
-      color:#111
+      color:#111;
+      -webkit-tap-highlight-color: transparent;
     }
 
     /* Layout */
@@ -36,7 +37,8 @@
       border:1px solid #ccc;
       background:#fff;
       cursor:pointer;
-      font-weight:bold
+      font-weight:bold;
+      user-select:none;
     }
     .btn:hover{background:#eee}
     #add-table{
@@ -92,7 +94,8 @@
       padding:10px;
       border:1px solid #ddd;
       display:flex;
-      flex-direction:column
+      flex-direction:column;
+      position:relative;
     }
     .table.over{
       background:#fee2e2;
@@ -141,11 +144,15 @@
       background:#fff;
       border:1px solid #ccc;
       border-radius:6px;
-      padding:6px;
+      padding:8px 12px;
       margin-bottom:4px;
       cursor:grab;
       position:relative;
       user-select:none;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
     }
     .guest-list li:not(.drag-placeholder)::before{
       counter-increment:guest;
@@ -156,6 +163,37 @@
       color:#555;
       font-weight:bold;
     }
+
+    /* Guest name */
+    .guest-name{
+      flex:1;
+      display:inline-block;
+      user-select:none;
+    }
+
+    /* Mũi tên Android */
+    .move-arrow{
+      display:none;
+      font-size:22px;
+      padding:4px 6px;
+      background:#eee;
+      border-radius:6px;
+      user-select:none;
+    }
+    li.selected-guest .move-arrow{
+      display:inline-block;
+    }
+
+    /* Delete X */
+    .delete-x{
+      font-size:22px !important;
+      cursor:pointer;
+      color:#dc2626;
+      margin-left:8px;
+      user-select:none;
+    }
+    .delete-mode li .delete-x{display:inline-block}
+    .marked-delete{opacity:.4;text-decoration:line-through}
 
     /* Drag UI */
     .drag-placeholder{
@@ -181,21 +219,7 @@
       background:#fef3c7;
     }
 
-    /* Drop hints */
-    .table.can-drop{outline:3px solid #16a34a}
-    .table.cannot-drop{outline:3px solid #dc2626}
-
-    /* Warning */
-    .table-warning{
-      margin-top:6px;
-      padding:8px;
-      border-radius:8px;
-      background:#fee2e2;
-      color:#991b1b;
-      font-size:13px
-    }
-
-    /* Sidebar layout */
+    /* Sidebar */
     .sidebar {
       display: flex;
       flex-direction: column;
@@ -204,52 +228,52 @@
       overflow: hidden;
     }
 
-    /* Chưa sắp xếp (bản cũ có wrapper, ta dùng card mới bên dưới) */
-    #unassigned-wrapper {
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 6px;
+    .quick-add {
       background: #fff;
       border-radius: 12px;
       border: 1px solid #ddd;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #unassigned-wrapper-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       padding: 10px;
-      border-bottom: 1px solid #eee;
-      background: #fafafa;
       position: sticky;
       top: 0;
       z-index: 10;
     }
 
-    #unassigned {
-      padding: 10px;
-      margin: 0;
-      flex: 1;
-    }
-
-    /* Quick-add cũ (sẽ override bên dưới) */
-    .quick-add {
-      position: sticky;
-      bottom: 0;
-      background: #fff;
-      z-index: 1999;
-      border-top: 1px solid #ddd;
-      padding-top: 14px;
-      padding-bottom: 14px;
-    }
-
-    textarea{
+    .quick-add textarea {
       width:100%;
-      height:120px;
+      height:90px;
+      resize:vertical;
       border-radius:8px;
-      padding:8px
+      padding:8px;
+    }
+
+    .unassigned-card {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      background:#fff;
+      border-radius:12px;
+      border:1px solid #ddd;
+    }
+
+    .unassigned-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      padding:10px;
+      border-bottom:1px solid #eee;
+      background:#fafafa;
+      position:sticky;
+      top:0;
+      z-index:5;
+    }
+
+    .unassigned-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding:10px;
     }
 
     /* Modal */
@@ -260,32 +284,27 @@
       display:none;
       align-items:center;
       justify-content:center;
-      z-index:100
+      z-index:1000;
     }
     .modal-content{
       background:#fff;
       padding:16px;
       border-radius:14px;
       width:360px;
-      max-width:90vw
-    }
-    .modal-actions{
-      display:flex;
-      justify-content:flex-end;
-      gap:8px;
-      margin-top:14px
+      max-width:90vw;
+      max-height:80vh;
+      overflow:auto;
     }
 
     /* Print */
     @media print{
-      .layout{display:none!important}
-      #print-root{display:block!important}
-      .table-actions,.quick-add,.table-warning{display:none!important}
-      .table{page-break-inside:avoid}
-      .table + .table{page-break-before:always}
-      .table-title{font-size:18px}
+      body *{visibility:hidden}
+      #print-root, #print-root *{visibility:visible}
+      #print-root{position:absolute;inset:0;padding:12px}
+      .table{page-break-before:always}
       @page{size:A4;margin:10mm}
     }
+
     #print-root{
       position:fixed;
       inset:0;
@@ -295,165 +314,18 @@
       overflow:auto;
       padding:12px
     }
-
-    /* Mobile spacing */
-    @media (max-width:768px){
-      .btn{padding:10px 14px}
-      #add-table{font-size:26px}
-      .table{padding:12px}
-    }
-
-    .delete-x{
-      position:absolute;
-      right:6px;
-      top:4px;
-      font-size:12px;
-      cursor:pointer;
-      color:#dc2626;
-      display:none;
-    }
-    .delete-mode li .delete-x{display:block}
-    .marked-delete{opacity:.4;text-decoration:line-through}
-
-    .edit-names-mode li {
-      cursor: text !important;
-      background: #fff7d6;
-    }
-    .edit-names-mode .guest-list li.dragging {
-      opacity: 1 !important;
-    }
-
-    #toolbar-blocker {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 76.67%;
-      height: 55px;
-      background: rgba(255,255,255,0.5);
-      backdrop-filter: blur(2px);
-      z-index: 900;
-      display: none;
-      pointer-events: none;
-      border-radius: 0px 0px 10px 10px;
-    }
-
-    .edit-only {
-      position: relative;
-      z-index: 1001;
-    }
-
-    /* ============================
-       SIDEBAR FIX & OPTIMIZATION
-       ============================ */
-
-    .sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    #unassigned-wrapper {
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 6px;
-      border-radius: 12px;
-    }
-
-    #unassigned-wrapper-header {
-      position: sticky;
-      top: 0;
-      background: #fff;
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      z-index: 5;
-    }
-
-    /* Quick-add mới: card trên cùng sidebar */
-    .quick-add {
-      background: #fff;
-      border-radius: 12px;
-      border: 1px solid #ddd;
-      padding: 10px;
-      margin-top: 8px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .quick-add textarea {
-      height: 90px;
-      max-height: 140px;
-      resize: vertical;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-height: 100vh;
-    }
-
-    /* Card "Chưa sắp xếp" chiếm phần còn lại */
-    .unassigned-card {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .unassigned-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 6px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .unassigned-scroll {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-
-    #help-modal {
-      z-index: 2000 !important;
-    }
-
-    /* Khách đang được chọn trên Android */
-    .selected-guest {
-      background: #ffe0b2 !important;
-      border: 2px solid #ff9800 !important;
-    }
-
-    .move-arrow {
-  display: none;
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 18px;
-  padding: 4px;
-  background: #eee;
-  border-radius: 6px;
-}
-li.selected-guest .move-arrow {
-  display: inline-block;
-}
-
   </style>
 </head>
 <body>
+
   <div class="layout">
+
+    <!-- ==========================
+         KHỐI TRÁI: BÀN TIỆC
+         ========================== -->
     <div>
       <div class="toolbar">
+
         <button id="add-table">+</button>
         <button id="adjust-max" class="btn">⚙️ Chỉnh max</button>
 
@@ -463,6 +335,7 @@ li.selected-guest .move-arrow {
 
         <button id="save-btn" class="btn">💾 Lưu</button>
         <button id="clear-btn" class="btn">🧹 Xóa</button>
+
         <input type="file" id="import-csv" accept=".csv" hidden>
         <button id="import-btn" class="btn">📥 Import CSV</button>
 
@@ -488,18 +361,20 @@ li.selected-guest .move-arrow {
       <div class="tables" id="tables"></div>
     </div>
 
-    <!-- SIDEBAR -->
+    <!-- ==========================
+         KHỐI PHẢI: SIDEBAR
+         ========================== -->
     <div class="sidebar">
 
-      <!-- THÊM KHÁCH LUÔN TRÊN CÙNG -->
-      <div class="card quick-add">
+      <!-- THÊM KHÁCH NHANH -->
+      <div class="quick-add">
         <h3>Thêm khách</h3>
         <textarea id="guest-input" placeholder="Mỗi dòng là 1 tên..."></textarea>
         <button id="add-guest" class="btn">Thêm</button>
       </div>
 
       <!-- CHƯA SẮP XẾP -->
-      <div class="card unassigned-card">
+      <div class="unassigned-card">
         <div class="unassigned-header">
           <h3>Chưa sắp xếp</h3>
           <div>
@@ -517,13 +392,16 @@ li.selected-guest .move-arrow {
     </div>
   </div>
 
-  <!-- MODALS -->
+  <!-- ==========================
+       MODAL: CHỈNH MAX
+       ========================== -->
   <div class="modal" id="max-modal">
     <div class="modal-content">
       <h3>Chỉnh số khách tối đa</h3>
+
       <div style="margin-bottom:10px">
         <label><b>Chỉnh hàng loạt:</b></label>
-        <input type="number" id="bulk-max" min="1" placeholder="Nhập số khách tối đa..." 
+        <input type="number" id="bulk-max" min="1" placeholder="Nhập số khách tối đa..."
           style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc;margin-top:4px">
         <div style="font-size:12px;color:#666;margin-top:2px">
           Khi nhập số vào đây, tất cả bàn sẽ có số khách tối đa giống nhau.
@@ -531,30 +409,41 @@ li.selected-guest .move-arrow {
       </div>
 
       <div id="max-list"></div>
-      <div class="modal-actions">
+
+      <div class="modal-actions" style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px">
         <button id="max-cancel" class="btn">Hủy</button>
         <button id="max-save" class="btn">Lưu</button>
       </div>
     </div>
   </div>
 
+  <!-- ==========================
+       MODAL: PDF 1 BÀN
+       ========================== -->
   <div class="modal" id="pdf-one-modal">
     <div class="modal-content">
       <h3>Xuất PDF 1 bàn</h3>
-      <select id="pdf-table-select" style="width:100%;padding:8px;border-radius:8px"></select>
-      <div class="modal-actions">
+
+      <select id="pdf-table-select"
+        style="width:100%;padding:8px;border-radius:8px;margin-top:10px;margin-bottom:10px"></select>
+
+      <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px">
         <button id="pdf-one-cancel" class="btn">Hủy</button>
         <button id="pdf-one-export" class="btn">Xuất</button>
       </div>
     </div>
   </div>
 
+  <!-- ==========================
+       MODAL: HƯỚNG DẪN
+       ========================== -->
   <div class="modal" id="help-modal">
     <div class="modal-content">
       <h3>Hướng dẫn sử dụng</h3>
+
       <div id="help-content" style="max-height:60vh;overflow:auto;line-height:1.5">
         <h4>1. Tạo bàn</h4>
-        <p>Bấm nút <b>+</b> để tạo thêm bàn mới. Mỗi bàn có tên và số khách tối đa.</p>
+        <p>Bấm nút <b>+</b> để tạo thêm bàn mới.</p>
 
         <h4>2. Chỉnh số khách tối đa</h4>
         <p>Bấm <b>⚙️ Chỉnh max</b> để thay đổi số khách tối đa của từng bàn.</p>
@@ -577,25 +466,29 @@ li.selected-guest .move-arrow {
         <h4>8. Kéo‑thả khách</h4>
         <p>Kéo khách giữa các bàn hoặc từ “Chưa sắp xếp” để bố trí chỗ ngồi.</p>
       </div>
-      <div class="modal-actions">
+
+      <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
         <button id="help-close" class="btn">Trở về</button>
       </div>
     </div>
   </div>
-  
+
+  <!-- ==========================
+       MODAL: MOVE KHÁCH
+       ========================== -->
   <div id="move-modal" class="modal">
-  <div class="modal-box">
-    <h3>Chọn bàn</h3>
-    <div id="move-list"></div>
-    <button id="move-cancel">Hủy</button>
-  </div>
+    <div class="modal-content">
+      <h3>Chọn bàn</h3>
+      <div id="move-list" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>
+      <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+        <button id="move-cancel" class="btn">Hủy</button>
+      </div>
+    </div>
   </div>
 
-
+  <!-- ROOT IN PDF -->
   <div id="print-root"></div>
-
- <script>
-
+<script>
 /* =======================
    BƯỚC 1 — KHỞI TẠO BIẾN
    ======================= */
@@ -613,17 +506,15 @@ const maxList = document.getElementById("max-list");
 const pdfOneModal = document.getElementById("pdf-one-modal");
 const pdfTableSelect = document.getElementById("pdf-table-select");
 
-/* Nhận diện thiết bị */
 const isTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
 const isAndroid = /Android/i.test(navigator.userAgent || "");
 
-/* Trạng thái */
 let editNamesMode = false;
 let deleteMode = false;
 let selectedGuest = null;
 
 /* =======================
-   BƯỚC 1 — HÀM HELPER
+   BƯỚC 1 — HELPER
    ======================= */
 
 function normalizeName(s){
@@ -638,22 +529,22 @@ function guestNameFromLi(li){
   return li.dataset.name || normalizeName(li.textContent);
 }
 
-/* Tạo 1 khách <li> — bản FIX hoàn chỉnh */
+/* =======================
+   TẠO 1 KHÁCH <li> — BẢN FIX
+   ======================= */
+
 function createGuestLi(name){
   const clean = normalizeName(name);
   const li = document.createElement("li");
   li.dataset.name = clean;
 
-  // Bọc text trong span để tránh Chrome Android xóa chữ
   const span = document.createElement("span");
   span.className = "guest-name";
   span.textContent = clean;
   li.appendChild(span);
 
-  // Windows: cho drag
   li.draggable = !isAndroid;
 
-  // Android: chặn mọi hành vi gây mất chữ
   if (isAndroid) {
     li.style.userSelect = "none";
     li.style.webkitUserSelect = "none";
@@ -669,22 +560,25 @@ function createGuestLi(name){
   return li;
 }
 
-/* Rút gọn tên */
+/* =======================
+   RÚT GỌN TÊN
+   ======================= */
+
 function shortName(full){
   const parts = full.trim().split(/\s+/);
   if(parts.length <= 2) return full;
   return parts.slice(-2).join(" ");
 }
 
-/* Bỏ chọn khách đang chọn (Android) */
 function clearSelectedGuest(){
   if(selectedGuest){
     selectedGuest.classList.remove("selected-guest");
     selectedGuest = null;
   }
 }
+
 /* =======================
-   BƯỚC 2 — TẠO BÀN & UPDATE
+   BƯỚC 2 — TẠO BÀN
    ======================= */
 
 function createTable(name, max = 10, guests = []) {
@@ -719,11 +613,13 @@ function createTable(name, max = 10, guests = []) {
   updateTable(table);
 }
 
-/* Cập nhật số lượng khách + cảnh báo + tiêu đề */
+/* =======================
+   UPDATE BÀN — BẢN FIX
+   ======================= */
+
 function updateTable(table) {
   const list = table.querySelector(".guest-list");
 
-  // Luôn hiển thị tên đầy đủ trong bàn (không phá span/mũi tên)
   list.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
     const span = li.querySelector(".guest-name");
     if (span) span.textContent = li.dataset.name;
@@ -751,7 +647,10 @@ function updateTable(table) {
   updateSummary();
 }
 
-/* Tổng số bàn + khách */
+/* =======================
+   UPDATE TỔNG
+   ======================= */
+
 function updateSummary() {
   document.getElementById("total-tables").textContent =
     document.querySelectorAll(".table").length;
@@ -761,7 +660,7 @@ function updateSummary() {
 }
 
 /* =======================
-   BƯỚC 3 — UPDATE UNASSIGNED VIEW (BẢN FIX)
+   UPDATE UNASSIGNED — BẢN FIX
    ======================= */
 
 function updateUnassignedView() {
@@ -794,6 +693,12 @@ function updateUnassignedView() {
   list.style.display = "grid";
   list.style.gridTemplateColumns = "repeat(2,1fr)";
 }
+</script>
+<!-- =======================
+     PHẦN 4 — DRAG / TOUCH / ANDROID / DELETE / EDIT NAME
+     ======================= -->
+
+<script>
 /* =======================
    BƯỚC 4 — DRAG WINDOWS
    ======================= */
@@ -849,7 +754,7 @@ if (!isAndroid) {
 }
 
 /* =======================
-   BƯỚC 5 — TOUCH DRAG WINDOWS
+   BƯỚC 5 — TOUCH DRAG (WINDOWS TOUCH)
    ======================= */
 
 if (isTouch && !isAndroid) {
@@ -908,17 +813,35 @@ if (isTouch && !isAndroid) {
 
 document.addEventListener("click", e => {
   if (!isAndroid) return;
+
   const li = e.target.closest(".guest-list li");
   if (!li) return;
+
   if (deleteMode || editNamesMode) return;
-  if (selectedGuest === li) return clearSelectedGuest();
+
+  // Nếu bấm vào mũi tên → mở modal chọn bàn
+  if (e.target.classList.contains("move-arrow")) {
+    selectedGuest = li;
+    li.classList.add("selected-guest");
+    openMoveGuestModal(li);
+    return;
+  }
+
+  // Bấm lại để bỏ chọn
+  if (selectedGuest === li) {
+    clearSelectedGuest();
+    return;
+  }
+
   clearSelectedGuest();
   selectedGuest = li;
   li.classList.add("selected-guest");
 });
 
+/* Android: tap bàn để chuyển khách */
 tablesEl.addEventListener("click", e => {
   if (!isAndroid) return;
+
   const table = e.target.closest(".table");
   if (!table) return;
   if (!selectedGuest) return;
@@ -927,7 +850,11 @@ tablesEl.addEventListener("click", e => {
   const list = table.querySelector(".guest-list");
   const max = parseInt(table.dataset.max, 10);
   const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
-  if (count >= max) return alert("Bàn đã đủ người!");
+
+  if (count >= max) {
+    alert("Bàn đã đủ người!");
+    return;
+  }
 
   list.appendChild(selectedGuest);
   clearSelectedGuest();
@@ -936,6 +863,7 @@ tablesEl.addEventListener("click", e => {
   updateUnassignedView();
 });
 
+/* Android: chặn drag mặc định */
 if (isAndroid) {
   document.addEventListener("touchstart", e => {
     const li = e.target.closest("li");
@@ -959,6 +887,7 @@ deleteBtn.onclick = () => {
   deleteMode = true;
   clearSelectedGuest();
   document.body.classList.add("delete-mode");
+
   deleteBtn.classList.add("hidden");
   deleteConfirmBtn.classList.remove("hidden");
   deleteCancelBtn.classList.remove("hidden");
@@ -977,22 +906,27 @@ deleteBtn.onclick = () => {
 deleteCancelBtn.onclick = () => {
   deleteMode = false;
   document.body.classList.remove("delete-mode");
+
   deleteBtn.classList.remove("hidden");
   deleteConfirmBtn.classList.add("hidden");
   deleteCancelBtn.classList.add("hidden");
+
   document.querySelectorAll(".delete-x").forEach(x => x.remove());
   document.querySelectorAll(".marked-delete").forEach(li => li.classList.remove("marked-delete"));
 };
 
 deleteConfirmBtn.onclick = () => {
   if (!confirm("Xóa các khách mời đã chọn?")) return;
+
   document.querySelectorAll(".marked-delete").forEach(li => li.remove());
+
   deleteCancelBtn.onclick();
   document.querySelectorAll(".table").forEach(updateTable);
   saveState();
   updateUnassignedView();
 };
 
+/* Click vào dấu X */
 document.addEventListener("click", e => {
   if (!deleteMode) return;
   if (e.target.classList.contains("delete-x")) {
@@ -1086,8 +1020,14 @@ editSave.onclick = () => {
   saveState();
   updateUnassignedView();
 };
+</script>
+<!-- =======================
+     PHẦN 5 — SAVE / LOAD / IMPORT / EXPORT / ADD TABLE / MAX / MOVE
+     ======================= -->
+
+<script>
 /* =======================
-   BƯỚC 8 — SAVE / LOAD
+   SAVE / LOAD
    ======================= */
 
 document.getElementById("save-btn").onclick = () => {
@@ -1149,8 +1089,9 @@ function saveState() {
   document.querySelectorAll(".table").forEach(updateTable);
   updateUnassignedView();
 })();
+
 /* =======================
-   BƯỚC 8 — IMPORT CSV
+   IMPORT CSV
    ======================= */
 
 document.getElementById("import-btn").onclick = () => {
@@ -1165,7 +1106,7 @@ document.getElementById("import-csv").addEventListener("change", e => {
   reader.onload = () => parseCSV(reader.result);
   reader.readAsText(file, "utf-8");
 
-  e.target.value = ""; // reset input
+  e.target.value = "";
 });
 
 function parseCSV(text) {
@@ -1205,8 +1146,9 @@ function parseCSV(text) {
   updateSummary();
   updateUnassignedView();
 }
+
 /* =======================
-   BƯỚC 8 — EXPORT MENU
+   EXPORT MENU
    ======================= */
 
 exportBtn.onclick = () => {
@@ -1215,7 +1157,11 @@ exportBtn.onclick = () => {
 };
 
 document.addEventListener("click", e => {
-  if (!exportMenu.contains(e.target) && e.target !== exportBtn) {
+  if (
+    !exportMenu.contains(e.target) &&
+    e.target !== exportBtn &&
+    !e.target.closest("#help-btn")
+  ) {
     exportMenu.style.display = "none";
   }
 });
@@ -1248,31 +1194,28 @@ document.getElementById("export-csv").onclick = () => {
 };
 
 /* =======================
-   EXPORT PDF TẤT CẢ
+   EXPORT PDF TẤT CẢ — BẢN FIX
    ======================= */
 
 document.getElementById("export-pdf-all").onclick = () => {
   exportMenu.style.display = "none";
 
   printRoot.innerHTML = "";
-  const wrap = document.createElement("div");
-  wrap.className = "print-all-wrapper";
 
-  document.querySelectorAll(".table").forEach(t => {
-    wrap.appendChild(t.cloneNode(true));
+  document.querySelectorAll(".table").forEach((t, i) => {
+    const clone = t.cloneNode(true);
+    clone.style.pageBreakBefore = i === 0 ? "auto" : "always";
+    printRoot.appendChild(clone);
   });
 
-  printRoot.appendChild(wrap);
   printRoot.style.display = "block";
-
   window.print();
-
-  printRoot.innerHTML = "";
   printRoot.style.display = "none";
+  printRoot.innerHTML = "";
 };
 
 /* =======================
-   EXPORT PDF 1 BÀN
+   EXPORT PDF 1 BÀN — BẢN FIX
    ======================= */
 
 document.getElementById("export-pdf-one").onclick = () => {
@@ -1298,60 +1241,53 @@ document.getElementById("pdf-one-export").onclick = () => {
   const table = document.querySelectorAll(".table")[index];
 
   printRoot.innerHTML = "";
-  printRoot.appendChild(table.cloneNode(true));
+  const clone = table.cloneNode(true);
+  printRoot.appendChild(clone);
+
   printRoot.style.display = "block";
-
   window.print();
-
-  printRoot.innerHTML = "";
   printRoot.style.display = "none";
+  printRoot.innerHTML = "";
 
   pdfOneModal.style.display = "none";
 };
+
 /* =======================
    THÊM BÀN
    ======================= */
 
-const addTableBtn = document.getElementById("add-table");
-
-if (addTableBtn) {
-  addTableBtn.onclick = () => {
-    const count = document.querySelectorAll(".table").length + 1;
-    createTable("Bàn " + count);
-    updateSummary();
-    saveState();
-  };
-}
+document.getElementById("add-table").onclick = () => {
+  const count = document.querySelectorAll(".table").length + 1;
+  createTable("Bàn " + count);
+  updateSummary();
+  saveState();
+};
 
 /* =======================
    CHỈNH MAX
    ======================= */
 
-const adjustMaxBtn = document.getElementById("adjust-max");
+document.getElementById("adjust-max").onclick = () => {
+  maxList.innerHTML = "";
 
-if (adjustMaxBtn) {
-  adjustMaxBtn.onclick = () => {
-    maxList.innerHTML = "";
+  document.querySelectorAll(".table").forEach((t, i) => {
+    const row = document.createElement("div");
+    row.className = "max-row";
+    row.style.marginBottom = "8px";
 
-    document.querySelectorAll(".table").forEach((t, i) => {
-      const row = document.createElement("div");
-      row.className = "max-row";
-      row.style.marginBottom = "8px";
+    const name = t.dataset.baseName || ("Bàn " + (i + 1));
+    const currentMax = t.dataset.max || "10";
 
-      const name = t.dataset.baseName || ("Bàn " + (i + 1));
-      const currentMax = t.dataset.max || "10";
+    row.innerHTML = `
+      <div style="margin-bottom:4px;font-weight:600">${name}</div>
+      <input type="number" class="max-input" data-index="${i}" value="${currentMax}"
+        style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc">
+    `;
+    maxList.appendChild(row);
+  });
 
-      row.innerHTML = `
-        <div style="margin-bottom:4px;font-weight:600">${name}</div>
-        <input type="number" class="max-input" data-index="${i}" value="${currentMax}"
-          style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc">
-      `;
-      maxList.appendChild(row);
-    });
-
-    maxModal.style.display = "flex";
-  };
-}
+  maxModal.style.display = "flex";
+};
 
 document.getElementById("max-cancel").onclick = () => {
   maxModal.style.display = "none";
@@ -1389,7 +1325,7 @@ document.getElementById("max-save").onclick = () => {
 };
 
 /* =======================
-   MOVE KHÁCH
+   MOVE KHÁCH (MŨI TÊN ANDROID)
    ======================= */
 
 function openMoveGuestModal(li){
@@ -1399,6 +1335,8 @@ function openMoveGuestModal(li){
   document.querySelectorAll(".table").forEach((t, i) => {
     const btn = document.createElement("button");
     btn.textContent = t.dataset.baseName;
+    btn.className = "btn";
+    btn.style.width = "100%";
     btn.onclick = () => {
       t.querySelector(".guest-list").appendChild(li);
       clearSelectedGuest();
@@ -1417,6 +1355,73 @@ document.getElementById("move-cancel").onclick = () => {
   document.getElementById("move-modal").style.display = "none";
 };
 
-  </script>
+/* =======================
+   ĐỔI TÊN BÀN + XÓA BÀN + AUTO FIX
+   ======================= */
+
+tablesEl.addEventListener("click", e => {
+  const table = e.target.closest(".table");
+  if (!table) return;
+
+  /* Xóa bàn */
+  if (e.target.classList.contains("delete-table-btn")) {
+    if (confirm("Xóa bàn này?")) {
+      table.remove();
+      updateSummary();
+      saveState();
+    }
+  }
+
+  /* Đổi tên bàn */
+  if (e.target.classList.contains("edit-table-btn")) {
+    const newName = prompt("Tên bàn:", table.dataset.baseName);
+    if (newName) {
+      table.dataset.baseName = normalizeName(newName);
+      updateTable(table);
+      saveState();
+    }
+  }
+
+  /* Quick add */
+  if (e.target.classList.contains("quick-add-btn")) {
+    const box = table.querySelector(".quick-add");
+    box.classList.toggle("hidden");
+    const input = box.querySelector(".quick-add-input");
+    input.focus();
+
+    input.onkeydown = ev => {
+      if (ev.key === "Enter") {
+        const name = normalizeName(input.value);
+        if (name) {
+          table.querySelector(".guest-list").appendChild(createGuestLi(name));
+          updateTable(table);
+          saveState();
+        }
+        input.value = "";
+        box.classList.add("hidden");
+      }
+      if (ev.key === "Escape") {
+        box.classList.add("hidden");
+      }
+    };
+  }
+
+  /* Auto fix */
+  if (e.target.classList.contains("auto-fix-btn")) {
+    const list = table.querySelector(".guest-list");
+    const max = parseInt(table.dataset.max, 10);
+    const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
+
+    while (items.length > max) {
+      unassigned.appendChild(items.pop());
+    }
+
+    updateTable(table);
+    updateUnassignedView();
+    saveState();
+  }
+});
+</script>
+
 </body>
 </html>
