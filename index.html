@@ -1191,7 +1191,6 @@ editCancel.onclick = () => {
   // Mở lại toolbar
   document.getElementById("toolbar-blocker").style.display = "none";
 
-
   // Khôi phục tên cũ
   originalNames.forEach((oldName, li) => {
     li.dataset.name = oldName;
@@ -1204,8 +1203,13 @@ editCancel.onclick = () => {
   editCancel.classList.add("hidden");
 
   document.querySelectorAll(".guest-list li").forEach(li => li.draggable = true);
+
   updateSummary();
+
+  // ⭐ QUAN TRỌNG: rút gọn lại tên ở Chưa sắp xếp
+  updateUnassignedView();
 };
+
 
 editSave.onclick = () => {
   editNamesMode = false;
