@@ -638,7 +638,7 @@ function guestNameFromLi(li){
   return li.dataset.name || normalizeName(li.textContent);
 }
 
-/* Tạo 1 khách <li> — đã fix Android */
+/* Tạo 1 khách <li> — bản FIX hoàn chỉnh */
 function createGuestLi(name){
   const clean = normalizeName(name);
   const li = document.createElement("li");
@@ -659,6 +659,7 @@ function createGuestLi(name){
     li.style.webkitUserSelect = "none";
     li.style.webkitUserDrag = "none";
     li.style.touchAction = "manipulation";
+
     const arrow = document.createElement("span");
     arrow.className = "move-arrow";
     arrow.textContent = "➡️";
@@ -668,8 +669,7 @@ function createGuestLi(name){
   return li;
 }
 
-
-/* Rút gọn tên (dùng cho danh sách dài) */
+/* Rút gọn tên */
 function shortName(full){
   const parts = full.trim().split(/\s+/);
   if(parts.length <= 2) return full;
@@ -687,7 +687,6 @@ function clearSelectedGuest(){
    BƯỚC 2 — TẠO BÀN & UPDATE
    ======================= */
 
-/* Tạo 1 bàn mới */
 function createTable(name, max = 10, guests = []) {
   const table = document.createElement("div");
   table.className = "table";
@@ -724,9 +723,10 @@ function createTable(name, max = 10, guests = []) {
 function updateTable(table) {
   const list = table.querySelector(".guest-list");
 
-  // Luôn hiển thị tên đầy đủ trong bàn
+  // Luôn hiển thị tên đầy đủ trong bàn (không phá span/mũi tên)
   list.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
-    li.textContent = li.dataset.name;
+    const span = li.querySelector(".guest-name");
+    if (span) span.textContent = li.dataset.name;
   });
 
   const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
@@ -751,7 +751,7 @@ function updateTable(table) {
   updateSummary();
 }
 
-/* Cập nhật tổng số bàn + tổng số khách */
+/* Tổng số bàn + khách */
 function updateSummary() {
   document.getElementById("total-tables").textContent =
     document.querySelectorAll(".table").length;
@@ -759,336 +759,190 @@ function updateSummary() {
   document.getElementById("total-guests").textContent =
     document.querySelectorAll(".guest-list li:not(.drag-placeholder)").length;
 }
+
 /* =======================
-   BƯỚC 3 — THÊM KHÁCH & UPDATE UNASSIGNED
+   BƯỚC 3 — UPDATE UNASSIGNED VIEW (BẢN FIX)
    ======================= */
 
-/* Thêm khách từ ô textarea */
-document.getElementById("add-guest").onclick = () => {
-  guestInput.value
-    .split("\n")
-    .map(normalizeName)
-    .filter(Boolean)
-    .forEach(n => unassigned.appendChild(createGuestLi(n)));
-
-  guestInput.value = "";
-  saveState();
-  updateUnassignedView();
-};
-
-/* Rút gọn danh sách "Chưa sắp xếp" khi quá dài */
 function updateUnassignedView() {
   const list = document.getElementById("unassigned");
   const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
   const count = items.length;
 
-  /* Nếu đang sửa tên → luôn hiển thị đầy đủ */
-  if (editNamesMode) {
-    items.forEach(li => li.textContent = li.dataset.name);
+  const setLiText = (li, text) => {
+    const span = li.querySelector(".guest-name");
+    if (span) span.textContent = text;
+  };
 
-    if (count < 20) {
-      list.style.display = "block";
-      list.style.gridTemplateColumns = "";
-      list.style.maxHeight = "";
-      list.style.overflowY = "";
-    } else {
-      list.style.display = "grid";
-      list.style.gridTemplateColumns = "repeat(2, 1fr)";
-      list.style.columnGap = "10px";
-      list.style.maxHeight = "";
-      list.style.overflowY = "";
-    }
+  if (editNamesMode) {
+    items.forEach(li => setLiText(li, li.dataset.name));
+    list.style.display = count < 20 ? "block" : "grid";
+    list.style.gridTemplateColumns = count < 20 ? "" : "repeat(2,1fr)";
     return;
   }
 
-  /* Reset về tên đầy đủ trước */
-  items.forEach(li => li.textContent = li.dataset.name);
+  items.forEach(li => setLiText(li, li.dataset.name));
 
-  /* Nếu ít khách → không rút gọn */
   if (count < 20) {
     list.style.display = "block";
     list.style.gridTemplateColumns = "";
-    list.style.maxHeight = "";
-    list.style.overflowY = "";
     return;
   }
 
-  /* Rút gọn tên */
-  items.forEach(li => {
-    li.textContent = shortName(li.dataset.name);
-  });
+  items.forEach(li => setLiText(li, shortName(li.dataset.name)));
 
-  /* Luôn hiển thị dạng 2 cột khi dài */
   list.style.display = "grid";
-  list.style.gridTemplateColumns = "repeat(2, 1fr)";
-  list.style.columnGap = "10px";
-
-  /* Nếu quá dài → cho scroll */
-  if (count > 40) {
-    list.style.maxHeight = "600px";
-    list.style.overflowY = "auto";
-  } else {
-    list.style.maxHeight = "";
-    list.style.overflowY = "";
-  }
+  list.style.gridTemplateColumns = "repeat(2,1fr)";
 }
 /* =======================
-   BƯỚC 4 — DRAG & DROP (WINDOWS)
+   BƯỚC 4 — DRAG WINDOWS
    ======================= */
 
 let draggedItem = null;
-
-/* Placeholder hiển thị vị trí thả */
 const placeholder = document.createElement("li");
 placeholder.className = "drag-placeholder";
 
-/* Tìm vị trí thả trong danh sách */
 function getDragAfterElement(container, y) {
   const items = [...container.querySelectorAll("li:not(.dragging):not(.drag-placeholder)")];
-
   return items.reduce((closest, child) => {
     const box = child.getBoundingClientRect();
     const offset = y - box.top - box.height / 2;
-
-    if (offset < 0 && offset > closest.offset) {
-      return { offset, element: child };
-    }
-    return closest;
+    return (offset < 0 && offset > closest.offset)
+      ? { offset, element: child }
+      : closest;
   }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
 }
 
-/* Chỉ bật drag‑drop trên Windows */
 if (!isAndroid) {
-
-  /* Bắt đầu kéo */
   document.addEventListener("dragstart", e => {
-  // Android: chặn hoàn toàn drag
-  if (isAndroid) {
-    e.preventDefault();
-    return;
-  }
+    if (e.target.tagName !== "LI") return;
+    draggedItem = e.target;
+    draggedItem.classList.add("dragging");
+    e.dataTransfer.setData("", "");
+  });
 
-  if (e.target.tagName !== "LI") return;
-
-  draggedItem = e.target;
-  draggedItem.classList.add("dragging");
-
-  /* Bắt buộc cho Firefox */
-  e.dataTransfer.setData("", "");
-});
-
-
-  /* Khi kéo qua danh sách */
   document.addEventListener("dragover", e => {
     const list = e.target.closest(".guest-list");
     if (!list || !draggedItem) return;
-
     e.preventDefault();
-
     const after = getDragAfterElement(list, e.clientY);
     after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
-
-    updateDropHints();
   });
 
-  /* Thả vào danh sách */
   document.addEventListener("drop", e => {
     const list = e.target.closest(".guest-list");
     if (!list || !draggedItem) return;
-
     e.preventDefault();
-
     list.insertBefore(draggedItem, placeholder);
-    draggedItem.textContent = draggedItem.dataset.name;
-
     placeholder.remove();
     draggedItem.classList.remove("dragging");
     draggedItem = null;
-
-    clearDropHints();
     document.querySelectorAll(".table").forEach(updateTable);
     saveState();
     setTimeout(updateUnassignedView, 0);
   });
 
-  /* Kéo kết thúc */
   document.addEventListener("dragend", () => {
     placeholder.remove();
-    clearDropHints();
     setTimeout(updateUnassignedView, 0);
   });
 }
+
 /* =======================
-   BƯỚC 5 — TOUCH‑DRAG (WINDOWS TOUCH ONLY)
+   BƯỚC 5 — TOUCH DRAG WINDOWS
    ======================= */
 
-/* Chỉ chạy trên thiết bị cảm ứng KHÔNG phải Android */
 if (isTouch && !isAndroid) {
-
   let touchItem = null;
   let touchClone = null;
   let timer = null;
 
-  /* Bắt đầu chạm giữ để kéo */
   document.addEventListener("touchstart", e => {
     const li = e.target.closest(".guest-list li");
     if (!li) return;
 
-    /* Nhấn giữ 200ms mới kích hoạt kéo */
     timer = setTimeout(() => {
       touchItem = li;
-
       const r = li.getBoundingClientRect();
       touchClone = li.cloneNode(true);
       touchClone.classList.add("touch-dragging");
       touchClone.style.width = r.width + "px";
-
       document.body.appendChild(touchClone);
-
       placeholder.style.height = r.height + "px";
       li.parentElement.insertBefore(placeholder, li);
       li.style.visibility = "hidden";
     }, 200);
   }, { passive: false });
 
-  /* Di chuyển */
   document.addEventListener("touchmove", e => {
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
+    if (timer) { clearTimeout(timer); timer = null; }
     if (!touchItem || !touchClone) return;
-
     e.preventDefault();
     const t = e.touches[0];
-
     touchClone.style.left = t.clientX - touchClone.offsetWidth / 2 + "px";
     touchClone.style.top = t.clientY - touchClone.offsetHeight / 2 + "px";
-
     const el = document.elementFromPoint(t.clientX, t.clientY);
     const list = el?.closest(".guest-list");
     if (!list) return;
-
     const after = getDragAfterElement(list, t.clientY);
     after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
-
-    updateDropHints();
-
-    /* Auto scroll */
-    if (t.clientY < 80) window.scrollBy(0, -10);
-    if (window.innerHeight - t.clientY < 80) window.scrollBy(0, 10);
   }, { passive: false });
 
-  /* Kết thúc kéo */
   document.addEventListener("touchend", () => {
     if (!touchItem) return;
-
     placeholder.parentElement.insertBefore(touchItem, placeholder);
     touchItem.style.visibility = "";
     placeholder.remove();
-
     if (touchClone) touchClone.remove();
-
     touchItem = null;
     touchClone = null;
-
-    clearDropHints();
     document.querySelectorAll(".table").forEach(updateTable);
     saveState();
     setTimeout(updateUnassignedView, 0);
   });
-
-  /* Hủy kéo */
-  document.addEventListener("touchcancel", () => {
-    if (touchClone) touchClone.remove();
-    touchClone = null;
-
-    if (touchItem) {
-      touchItem.style.visibility = "";
-    }
-
-    touchItem = null;
-    placeholder.remove();
-    clearDropHints();
-    setTimeout(updateUnassignedView, 0);
-  });
 }
+
 /* =======================
    BƯỚC 6 — ANDROID MODE
-   Tap chọn khách → Tap bàn
    ======================= */
 
-/* Android: chọn khách bằng cách tap */
 document.addEventListener("click", e => {
   if (!isAndroid) return;
-
   const li = e.target.closest(".guest-list li");
   if (!li) return;
-
-  // Không chọn khi đang xóa hoặc sửa tên
   if (deleteMode || editNamesMode) return;
-
-  // Bấm lại để bỏ chọn
-  if (selectedGuest === li) {
-    clearSelectedGuest();
-    return;
-  }
-
-  // Chọn khách
+  if (selectedGuest === li) return clearSelectedGuest();
   clearSelectedGuest();
   selectedGuest = li;
   li.classList.add("selected-guest");
 });
 
-
-/* Android: tap vào bàn để đưa khách vào bàn */
 tablesEl.addEventListener("click", e => {
   if (!isAndroid) return;
-
   const table = e.target.closest(".table");
   if (!table) return;
-
-  // Không xử lý nếu không có khách được chọn
   if (!selectedGuest) return;
-
-  // Không xử lý khi đang sửa tên hoặc xóa
   if (editNamesMode || deleteMode) return;
 
   const list = table.querySelector(".guest-list");
   const max = parseInt(table.dataset.max, 10);
   const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
+  if (count >= max) return alert("Bàn đã đủ người!");
 
-  if (count >= max) {
-    alert("Bàn đã đủ người!");
-    return;
-  }
-
-  // Chuyển khách vào bàn
   list.appendChild(selectedGuest);
   clearSelectedGuest();
-
   document.querySelectorAll(".table").forEach(updateTable);
   saveState();
   updateUnassignedView();
 });
 
-
-/* Android: chặn mọi hành vi kéo‑thả mặc định */
 if (isAndroid) {
   document.addEventListener("touchstart", e => {
     const li = e.target.closest("li");
     if (!li) return;
-
-    // Không chặn khi đang sửa tên
     if (editNamesMode) return;
-
-    // Tắt drag hoàn toàn
     li.draggable = false;
-
-    // Ngăn Chrome Android tạo ghost-drag & mất chữ
     li.style.userSelect = "none";
-    li.style.webkitUserSelect = "none";
-    li.style.webkitUserDrag = "none";
     li.style.touchAction = "manipulation";
   }, { passive: true });
 }
@@ -1105,7 +959,6 @@ deleteBtn.onclick = () => {
   deleteMode = true;
   clearSelectedGuest();
   document.body.classList.add("delete-mode");
-
   deleteBtn.classList.add("hidden");
   deleteConfirmBtn.classList.remove("hidden");
   deleteCancelBtn.classList.remove("hidden");
@@ -1124,27 +977,22 @@ deleteBtn.onclick = () => {
 deleteCancelBtn.onclick = () => {
   deleteMode = false;
   document.body.classList.remove("delete-mode");
-
   deleteBtn.classList.remove("hidden");
   deleteConfirmBtn.classList.add("hidden");
   deleteCancelBtn.classList.add("hidden");
-
   document.querySelectorAll(".delete-x").forEach(x => x.remove());
   document.querySelectorAll(".marked-delete").forEach(li => li.classList.remove("marked-delete"));
 };
 
 deleteConfirmBtn.onclick = () => {
   if (!confirm("Xóa các khách mời đã chọn?")) return;
-
   document.querySelectorAll(".marked-delete").forEach(li => li.remove());
-
-  deleteCancelBtn.onclick(); // reset mode
+  deleteCancelBtn.onclick();
   document.querySelectorAll(".table").forEach(updateTable);
   saveState();
   updateUnassignedView();
 };
 
-/* Click vào dấu X để đánh dấu */
 document.addEventListener("click", e => {
   if (!deleteMode) return;
   if (e.target.classList.contains("delete-x")) {
@@ -1152,9 +1000,8 @@ document.addEventListener("click", e => {
   }
 });
 
-
 /* =======================
-   BƯỚC 7 — EDIT NAME MODE
+   BƯỚC 7 — EDIT NAME MODE (BẢN FIX)
    ======================= */
 
 let originalNames = new Map();
@@ -1167,86 +1014,78 @@ editBtn.onclick = () => {
   editNamesMode = true;
   clearSelectedGuest();
   document.body.classList.add("edit-names-mode");
-
-  // Khóa toolbar
   document.getElementById("toolbar-blocker").style.pointerEvents = "auto";
 
   editBtn.classList.add("hidden");
   editSave.classList.remove("hidden");
   editCancel.classList.remove("hidden");
 
-  // Lưu tên gốc
   originalNames.clear();
   document.querySelectorAll(".guest-list li").forEach(li => {
     originalNames.set(li, li.dataset.name);
-    li.contentEditable = "true";
+    const span = li.querySelector(".guest-name");
+    if (span) span.contentEditable = "true";
   });
 
-  // Tắt kéo thả (Android vẫn tắt)
   document.querySelectorAll(".guest-list li").forEach(li => {
-    li.draggable = !isAndroid ? false : false;
+    li.draggable = false;
   });
 
   updateUnassignedView();
 };
 
 editCancel.onclick = () => {
-  // 1) Khôi phục tên cũ trước
   originalNames.forEach((oldName, li) => {
     li.dataset.name = oldName;
-    li.textContent = oldName;
-    li.contentEditable = "false";
+    const span = li.querySelector(".guest-name");
+    if (span) {
+      span.textContent = oldName;
+      span.contentEditable = "false";
+    }
   });
 
-  // 2) Tắt chế độ sửa
   editNamesMode = false;
   document.body.classList.remove("edit-names-mode");
   document.getElementById("toolbar-blocker").style.pointerEvents = "none";
 
-  // 3) Khôi phục draggable
   document.querySelectorAll(".guest-list li").forEach(li => {
     li.draggable = !isAndroid;
   });
 
-  // 4) Khôi phục nút
   editBtn.classList.remove("hidden");
   editSave.classList.add("hidden");
   editCancel.classList.add("hidden");
 
-  // 5) Cập nhật giao diện
   document.querySelectorAll(".table").forEach(updateTable);
   updateUnassignedView();
 };
+
 editSave.onclick = () => {
-  // 1) Lưu tên mới trước
   document.querySelectorAll(".guest-list li").forEach(li => {
-    const newName = normalizeName(li.textContent.trim());
+    const span = li.querySelector(".guest-name");
+    if (!span) return;
+    const newName = normalizeName(span.textContent.trim());
     li.dataset.name = newName;
-    li.textContent = newName;
-    li.contentEditable = "false";
+    span.textContent = newName;
+    span.contentEditable = "false";
   });
 
-  // 2) Tắt chế độ sửa
   editNamesMode = false;
   document.body.classList.remove("edit-names-mode");
   document.getElementById("toolbar-blocker").style.pointerEvents = "none";
 
-  // 3) Khôi phục draggable
   document.querySelectorAll(".guest-list li").forEach(li => {
     li.draggable = !isAndroid;
   });
 
-  // 4) Khôi phục nút
   editBtn.classList.remove("hidden");
   editSave.classList.add("hidden");
   editCancel.classList.add("hidden");
 
-  // 5) Cập nhật giao diện
   document.querySelectorAll(".table").forEach(updateTable);
   saveState();
   updateUnassignedView();
 };
-
 /* =======================
    BƯỚC 8 — SAVE / LOAD
    ======================= */
@@ -1269,10 +1108,10 @@ function saveState() {
       name: t.dataset.baseName,
       max: t.dataset.max,
       guests: [...t.querySelectorAll(".guest-list li:not(.drag-placeholder)")]
-        .map(li => guestNameFromLi(li))
+        .map(li => li.dataset.name)
     })),
     unassigned: [...unassigned.querySelectorAll("li:not(.drag-placeholder)")]
-      .map(li => guestNameFromLi(li))
+      .map(li => li.dataset.name)
   };
 
   localStorage.setItem("wedding_state", JSON.stringify(state));
@@ -1287,16 +1126,29 @@ function saveState() {
     return;
   }
 
-  const s = JSON.parse(raw);
+  let s;
+  try {
+    s = JSON.parse(raw);
+  } catch (e) {
+    console.error("Lỗi parse state, reset dữ liệu", e);
+    localStorage.removeItem("wedding_state");
+    createTable("Bàn 1");
+    updateSummary();
+    return;
+  }
 
-  s.tables.forEach(t => createTable(t.name, t.max, t.guests));
-  s.unassigned.forEach(n => unassigned.appendChild(createGuestLi(n)));
+  if (!s.tables || !Array.isArray(s.tables)) {
+    createTable("Bàn 1");
+    updateSummary();
+    return;
+  }
+
+  s.tables.forEach(t => createTable(t.name, t.max, t.guests || []));
+  (s.unassigned || []).forEach(n => unassigned.appendChild(createGuestLi(n)));
 
   document.querySelectorAll(".table").forEach(updateTable);
   updateUnassignedView();
 })();
-
-
 /* =======================
    BƯỚC 8 — IMPORT CSV
    ======================= */
@@ -1353,8 +1205,6 @@ function parseCSV(text) {
   updateSummary();
   updateUnassignedView();
 }
-
-
 /* =======================
    BƯỚC 8 — EXPORT MENU
    ======================= */
@@ -1370,24 +1220,10 @@ document.addEventListener("click", e => {
   }
 });
 
-
-/* =======================
-   BƯỚC 8 — HELP MODAL
-   ======================= */
-
-const helpModal = document.getElementById("help-modal");
-
-document.getElementById("help-btn").onclick = () => {
-  helpModal.style.display = "flex";
-};
-
-document.getElementById("help-close").onclick = () => {
-  helpModal.style.display = "none";
-};
-
 /* =======================
    EXPORT CSV
    ======================= */
+
 document.getElementById("export-csv").onclick = () => {
   exportMenu.style.display = "none";
 
@@ -1414,13 +1250,11 @@ document.getElementById("export-csv").onclick = () => {
 /* =======================
    EXPORT PDF TẤT CẢ
    ======================= */
+
 document.getElementById("export-pdf-all").onclick = () => {
   exportMenu.style.display = "none";
 
-  // Dọn vùng in
   printRoot.innerHTML = "";
-
-  // Tạo wrapper chứa tất cả bàn
   const wrap = document.createElement("div");
   wrap.className = "print-all-wrapper";
 
@@ -1433,15 +1267,14 @@ document.getElementById("export-pdf-all").onclick = () => {
 
   window.print();
 
-  // Dọn lại sau khi in
   printRoot.innerHTML = "";
   printRoot.style.display = "none";
 };
 
-
 /* =======================
    EXPORT PDF 1 BÀN
    ======================= */
+
 document.getElementById("export-pdf-one").onclick = () => {
   exportMenu.style.display = "none";
 
@@ -1475,68 +1308,10 @@ document.getElementById("pdf-one-export").onclick = () => {
 
   pdfOneModal.style.display = "none";
 };
-
-   tablesEl.addEventListener("click", e => {
-  const table = e.target.closest(".table");
-  if (!table) return;
-
-  if (e.target.classList.contains("delete-table-btn")) {
-    if (confirm("Xóa bàn này?")) {
-      table.remove();
-      updateSummary();
-      saveState();
-    }
-  }
-
-  if (e.target.classList.contains("edit-table-btn")) {
-    const newName = prompt("Tên bàn:", table.dataset.baseName);
-    if (newName) {
-      table.dataset.baseName = normalizeName(newName);
-      updateTable(table);
-      saveState();
-    }
-  }
-
-  if (e.target.classList.contains("quick-add-btn")) {
-    const box = table.querySelector(".quick-add");
-    box.classList.toggle("hidden");
-    const input = box.querySelector(".quick-add-input");
-    input.focus();
-
-    input.onkeydown = ev => {
-      if (ev.key === "Enter") {
-        const name = normalizeName(input.value);
-        if (name) {
-          table.querySelector(".guest-list").appendChild(createGuestLi(name));
-          updateTable(table);
-          saveState();
-        }
-        input.value = "";
-        box.classList.add("hidden");
-      }
-      if (ev.key === "Escape") {
-        box.classList.add("hidden");
-      }
-    };
-  }
-
-  if (e.target.classList.contains("auto-fix-btn")) {
-    const list = table.querySelector(".guest-list");
-    const max = parseInt(table.dataset.max, 10);
-    const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
-
-    while (items.length > max) {
-      unassigned.appendChild(items.pop());
-    }
-
-    updateTable(table);
-    updateUnassignedView();
-    saveState();
-  }
-});
 /* =======================
    THÊM BÀN
    ======================= */
+
 const addTableBtn = document.getElementById("add-table");
 
 if (addTableBtn) {
@@ -1551,6 +1326,7 @@ if (addTableBtn) {
 /* =======================
    CHỈNH MAX
    ======================= */
+
 const adjustMaxBtn = document.getElementById("adjust-max");
 
 if (adjustMaxBtn) {
@@ -1577,12 +1353,10 @@ if (adjustMaxBtn) {
   };
 }
 
-// Nút Hủy trong modal max
 document.getElementById("max-cancel").onclick = () => {
   maxModal.style.display = "none";
 };
 
-// Nút Lưu trong modal max
 document.getElementById("max-save").onclick = () => {
   const inputs = maxList.querySelectorAll(".max-input");
   const tables = document.querySelectorAll(".table");
@@ -1599,7 +1373,6 @@ document.getElementById("max-save").onclick = () => {
     updateTable(table);
   });
 
-  // Chỉnh hàng loạt nếu có nhập
   const bulk = document.getElementById("bulk-max");
   if (bulk && bulk.value) {
     const v = parseInt(bulk.value, 10);
@@ -1614,9 +1387,11 @@ document.getElementById("max-save").onclick = () => {
   saveState();
   maxModal.style.display = "none";
 };
+
 /* =======================
-   NÚT MOVE KHÁCH
+   MOVE KHÁCH
    ======================= */
+
 function openMoveGuestModal(li){
   const box = document.getElementById("move-list");
   box.innerHTML = "";
