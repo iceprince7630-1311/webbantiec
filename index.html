@@ -408,6 +408,27 @@ li.selected-guest .move-arrow {
   padding: 12px;
 }
 
+/* Android toggle */
+.android-only {
+  display: none;
+  gap: 6px;
+}
+
+body.android .android-only {
+  display: flex;
+}
+
+#android-toggle .small {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+#android-toggle .active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
   </style>
   
 </head>
@@ -457,6 +478,12 @@ li.selected-guest .move-arrow {
       </div>
 
       <button id="help-btn" class="btn">❓ Hướng dẫn</button>
+
+      <!-- ANDROID MODE TOGGLE -->
+      <div id="android-toggle" class="android-only">
+        <button data-mode="tap" class="btn small active">📱 Tap</button>
+        <button data-mode="drag" class="btn small">🖐 Drag</button>
+      </div>
 
       <!-- SUMMARY -->
       <div id="summary">
@@ -629,13 +656,19 @@ let editNamesMode   = false;
 let deleteMode      = false;
 let selectedGuest   = null;
 
+/* ---------- ANDROID INTERACTION MODE ---------- */
+/*
+  tap  = chạm chọn khách → chạm bàn
+  drag = kéo thả (nâng cao)
+*/
+let androidInteractionMode = "tap";
+
 /* ---------- DRAG STATE ---------- */
 let draggedItem = null;
 const dragPlaceholder = document.createElement("li");
 dragPlaceholder.className = "drag-placeholder";
 </script>
 
-<script>
 /* =====================================================
    MODULE 2 — HELPER & UTILS
    ===================================================== */
@@ -1180,15 +1213,17 @@ const STORAGE_KEY = "wedding_state";
 /* ---------- SAVE ---------- */
 function saveState() {
   const state = {
-    tables: qsa(".table").map(t => ({
-      name: t.dataset.baseName,
-      max:  t.dataset.max,
-      guests: qsa("li:not(.drag-placeholder)", t.querySelector(".guest-list"))
-        .map(li => li.dataset.name)
-    })),
-    unassigned: qsa("li:not(.drag-placeholder)", unassigned)
+  tables: qsa(".table").map(t => ({
+    name: t.dataset.baseName,
+    max:  t.dataset.max,
+    guests: qsa("li:not(.drag-placeholder)", t.querySelector(".guest-list"))
       .map(li => li.dataset.name)
-  };
+  })),
+  unassigned: qsa("li:not(.drag-placeholder)", unassigned)
+    .map(li => li.dataset.name),
+
+  androidMode: isAndroid ? androidInteractionMode : null
+};
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
@@ -1219,15 +1254,23 @@ function loadState() {
     return;
   }
 
+  /* ---------- LOAD TABLES ---------- */
   state.tables.forEach(t =>
     createTable(t.name, t.max, t.guests || [])
   );
 
+  /* ---------- LOAD UNASSIGNED ---------- */
   (state.unassigned || []).forEach(name => {
     const li = createGuestLi(name);
     if (li) unassigned.appendChild(li);
   });
 
+  /* ---------- LOAD ANDROID MODE (PHASE 1) ---------- */
+  if (isAndroid && state.androidMode) {
+    androidInteractionMode = state.androidMode;
+  }
+
+  /* ---------- FINAL UPDATE ---------- */
   qsa(".table").forEach(updateTableView);
   updateUnassignedView();
 }
@@ -1625,6 +1668,39 @@ qs("#add-guest").onclick = () => {
   updateSummaryView();
   saveState();
 };
+
+/* =====================================================
+   ANDROID MODE TOGGLE (PHASE 2)
+   ===================================================== */
+
+if (isAndroid) {
+  document.body.classList.add("android");
+
+  const toggle = document.getElementById("android-toggle");
+  const buttons = toggle.querySelectorAll("button");
+
+  // Khôi phục trạng thái từ Phase 1
+  buttons.forEach(btn => {
+    if (btn.dataset.mode === androidInteractionMode) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  // Gắn sự kiện
+  buttons.forEach(btn => {
+    btn.onclick = () => {
+      const mode = btn.dataset.mode;
+
+      androidInteractionMode = mode;
+      saveState();
+
+      buttons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    };
+  });
+}
 
 </script>
 
