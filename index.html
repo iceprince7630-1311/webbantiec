@@ -748,6 +748,7 @@ function updateUnassignedView() {
    LOAD DỮ LIỆU
    ======================= */
 
+/* Load dữ liệu khi mở trang */
 (function load() {
   const raw = localStorage.getItem("wedding_state");
   if (!raw) {
@@ -767,11 +768,6 @@ function updateUnassignedView() {
     return;
   }
 
-  if (s.androidMode) {
-    androidToggle.checked = true;
-    androidToggle.dispatchEvent(new Event("change"));
-  }
-
   if (!s.tables || !Array.isArray(s.tables)) {
     createTable("Bàn 1");
     updateSummary();
@@ -784,6 +780,7 @@ function updateUnassignedView() {
   document.querySelectorAll(".table").forEach(updateTable);
   updateUnassignedView();
 })();
+
 </script>
 <script>
 /* =======================
@@ -980,38 +977,6 @@ function saveState() {
   localStorage.setItem("wedding_state", JSON.stringify(state));
 }
 
-/* Load dữ liệu khi mở trang */
-(function load() {
-  const raw = localStorage.getItem("wedding_state");
-  if (!raw) {
-    createTable("Bàn 1");
-    updateSummary();
-    return;
-  }
-
-  let s;
-  try {
-    s = JSON.parse(raw);
-  } catch (e) {
-    console.error("Lỗi parse state, reset dữ liệu", e);
-    localStorage.removeItem("wedding_state");
-    createTable("Bàn 1");
-    updateSummary();
-    return;
-  }
-
-  if (!s.tables || !Array.isArray(s.tables)) {
-    createTable("Bàn 1");
-    updateSummary();
-    return;
-  }
-
-  s.tables.forEach(t => createTable(t.name, t.max, t.guests || []));
-  (s.unassigned || []).forEach(n => unassigned.appendChild(createGuestLi(n)));
-
-  document.querySelectorAll(".table").forEach(updateTable);
-  updateUnassignedView();
-})();
 
 
 document.getElementById("clear-btn").onclick = () => {
