@@ -652,32 +652,37 @@ function createGuestLi(name){
   span.textContent = clean;
   li.appendChild(span);
 
+  // Desktop: cho drag
   li.draggable = !isAndroid;
 
   if (isAndroid) {
     li.style.userSelect = "none";
     li.style.webkitUserSelect = "none";
     li.style.webkitUserDrag = "none";
-    li.style.touchAction = "manipulation";
+    li.style.touchAction = "none"; // quan trọng: chặn gesture/drag mặc định
 
     const arrow = document.createElement("span");
     arrow.className = "move-arrow";
     arrow.textContent = "➡️";
     li.appendChild(arrow);
 
-    span.addEventListener("touchstart", (e) => {
+    // Bắt sự kiện ở CAPTURE để không bị code drag khác "ăn" mất
+    li.addEventListener("pointerdown", (e) => {
+      const nameEl = e.target && e.target.closest ? e.target.closest(".guest-name") : null;
+      if (!nameEl) return;            // chỉ mở modal khi bấm đúng tên
+      if (editNamesMode) return;      // tắt khi đang sửa tên
+
       e.preventDefault();
       e.stopPropagation();
-
-      if (editNamesMode) return;
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
       openMoveModal(li);
-    }, { passive: false });
-
+    }, { capture: true });
   }
 
   return li;
 }
+
 
 document.getElementById("move-cancel").onclick = closeMoveModal;
 
@@ -816,7 +821,7 @@ function updateUnassignedView() {
 }
 </script>
 <!-- =======================
-     PHẦN 4 — DRAG / TOUCH / ANDROID / DELETE / EDIT NAME
+     PHẦN 4 — DRAG / TOUCH / ANDROID / DELETE / EDIT NAME (FIX)
      ======================= -->
 
 <script>
@@ -929,62 +934,17 @@ if (isTouch && !isAndroid) {
 }
 
 /* =======================
-   BƯỚC 6 — ANDROID MODE
+   BƯỚC 6 — ANDROID MODE (FIX)
    ======================= */
 
-document.addEventListener("click", e => {
-  if (!isAndroid) return;
+/* ❌ ĐÃ LOẠI BỎ ANDROID MODE CŨ
+   - Không còn click chọn khách
+   - Không còn tap bàn để chuyển
+   - Không còn openMoveGuestModal (sai hàm)
+   - Android chỉ dùng MODAL chọn bàn
+*/
 
-  const li = e.target.closest(".guest-list li");
-  if (!li) return;
-
-  if (deleteMode || editNamesMode) return;
-
-  // Nếu bấm vào mũi tên → mở modal chọn bàn
-  if (e.target.classList.contains("move-arrow")) {
-    selectedGuest = li;
-    li.classList.add("selected-guest");
-    openMoveGuestModal(li);
-    return;
-  }
-
-  // Bấm lại để bỏ chọn
-  if (selectedGuest === li) {
-    clearSelectedGuest();
-    return;
-  }
-
-  clearSelectedGuest();
-  selectedGuest = li;
-  li.classList.add("selected-guest");
-});
-
-/* Android: tap bàn để chuyển khách */
-tablesEl.addEventListener("click", e => {
-  if (!isAndroid) return;
-
-  const table = e.target.closest(".table");
-  if (!table) return;
-  if (!selectedGuest) return;
-  if (editNamesMode || deleteMode) return;
-
-  const list = table.querySelector(".guest-list");
-  const max = parseInt(table.dataset.max, 10);
-  const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
-
-  if (count >= max) {
-    alert("Bàn đã đủ người!");
-    return;
-  }
-
-  list.appendChild(selectedGuest);
-  clearSelectedGuest();
-  document.querySelectorAll(".table").forEach(updateTable);
-  saveState();
-  updateUnassignedView();
-});
-
-/* Android: chặn drag mặc định */
+/* Android: chặn drag mặc định (FIX) */
 if (isAndroid) {
   document.addEventListener("touchstart", e => {
     const li = e.target.closest("li");
@@ -992,8 +952,8 @@ if (isAndroid) {
     if (editNamesMode) return;
     li.draggable = false;
     li.style.userSelect = "none";
-    li.style.touchAction = "manipulation";
-  }, { passive: true });
+    li.style.touchAction = "none"; // FIX: không cho browser kéo
+  }, { passive: false });
 }
 
 /* =======================
@@ -1056,7 +1016,7 @@ document.addEventListener("click", e => {
 });
 
 /* =======================
-   BƯỚC 7 — EDIT NAME MODE (BẢN FIX)
+   BƯỚC 8 — EDIT NAME MODE
    ======================= */
 
 let originalNames = new Map();
@@ -1142,6 +1102,7 @@ editSave.onclick = () => {
   updateUnassignedView();
 };
 </script>
+
 <!-- =======================
      PHẦN 5 — SAVE / LOAD / IMPORT / EXPORT / ADD TABLE / MAX / MOVE
      ======================= -->
