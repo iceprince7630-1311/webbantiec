@@ -1301,6 +1301,173 @@ exportBtn.onclick = () =>
 document.addEventListener("click", e => {
   if (!exportBtn.contains(e.target)) exportMenu.style.display = "none";
 });
+
+/* =======================
+   THÊM BÀN
+   ======================= */
+
+document.getElementById("add-table").onclick = () => {
+  const count = document.querySelectorAll(".table").length + 1;
+  createTable("Bàn " + count);
+  updateSummary();
+  saveState();
+};
+
+/* =======================
+   CHỈNH MAX
+   ======================= */
+
+document.getElementById("adjust-max").onclick = () => {
+  maxList.innerHTML = "";
+
+  document.querySelectorAll(".table").forEach((t, i) => {
+    const row = document.createElement("div");
+    row.className = "max-row";
+    row.style.marginBottom = "8px";
+
+    const name = t.dataset.baseName || ("Bàn " + (i + 1));
+    const currentMax = t.dataset.max || "10";
+
+    row.innerHTML = `
+      <div style="margin-bottom:4px;font-weight:600">${name}</div>
+      <input type="number" class="max-input" data-index="${i}" value="${currentMax}"
+        style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc">
+    `;
+    maxList.appendChild(row);
+  });
+
+  maxModal.style.display = "flex";
+};
+
+document.getElementById("max-cancel").onclick = () => {
+  maxModal.style.display = "none";
+};
+
+document.getElementById("max-save").onclick = () => {
+  const inputs = maxList.querySelectorAll(".max-input");
+  const tables = document.querySelectorAll(".table");
+
+  inputs.forEach(inp => {
+    const idx = parseInt(inp.dataset.index, 10);
+    const val = parseInt(inp.value || "0", 10);
+    if (!val || val <= 0) return;
+
+    const table = tables[idx];
+    if (!table) return;
+
+    table.dataset.max = String(val);
+    updateTable(table);
+  });
+
+  const bulk = document.getElementById("bulk-max");
+  if (bulk && bulk.value) {
+    const v = parseInt(bulk.value, 10);
+    if (v > 0) {
+      document.querySelectorAll(".table").forEach(t => {
+        t.dataset.max = String(v);
+        updateTable(t);
+      });
+    }
+  }
+
+  saveState();
+  maxModal.style.display = "none";
+};
+  
+  /* =======================
+   ĐỔI TÊN BÀN + XÓA BÀN + AUTO FIX
+   ======================= */
+
+tablesEl.addEventListener("click", e => {
+  const table = e.target.closest(".table");
+  if (!table) return;
+
+  /* Xóa bàn */
+if (e.target.classList.contains("delete-table-btn")) {
+  if (confirm("Xóa bàn này?")) {
+
+    // 1) Lấy toàn bộ khách trong bàn
+    const guests = [...table.querySelectorAll(".guest-list li:not(.drag-placeholder)")];
+
+    // 2) Đưa từng khách về "Chưa sắp xếp"
+    guests.forEach(li => {
+      unassigned.appendChild(li);
+    });
+
+    // 3) Cập nhật giao diện
+    updateUnassignedView();
+
+    // 4) Xóa bàn
+    table.remove();
+
+    // 5) Cập nhật tổng & lưu
+    updateSummary();
+    saveState();
+  }
+}
+
+
+  /* Đổi tên bàn */
+  if (e.target.classList.contains("edit-table-btn")) {
+    const newName = prompt("Tên bàn:", table.dataset.baseName);
+    if (newName) {
+      table.dataset.baseName = normalizeName(newName);
+      updateTable(table);
+      saveState();
+    }
+  }
+
+  /* Quick add */
+  if (e.target.classList.contains("quick-add-btn")) {
+    const box = table.querySelector(".quick-add");
+    box.classList.toggle("hidden");
+    const input = box.querySelector(".quick-add-input");
+    input.focus();
+
+    input.onkeydown = ev => {
+      if (ev.key === "Enter") {
+        const name = normalizeName(input.value);
+        if (name) {
+          table.querySelector(".guest-list").appendChild(createGuestLi(name));
+          updateTable(table);
+          saveState();
+        }
+        input.value = "";
+        box.classList.add("hidden");
+      }
+      if (ev.key === "Escape") {
+        box.classList.add("hidden");
+      }
+    };
+  }
+
+  /* Auto fix */
+  if (e.target.classList.contains("auto-fix-btn")) {
+    const list = table.querySelector(".guest-list");
+    const max = parseInt(table.dataset.max, 10);
+    const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
+
+    while (items.length > max) {
+      unassigned.appendChild(items.pop());
+    }
+
+    updateTable(table);
+    updateUnassignedView();
+    saveState();
+  }
+});
+  
+/* =======================
+   HƯỚNG DẪN
+   ======================= */
+
+document.getElementById("help-btn").onclick = () => {
+  document.getElementById("help-modal").style.display = "flex";
+};
+
+document.getElementById("help-close").onclick = () => {
+  document.getElementById("help-modal").style.display = "none";
+};
 </script>
 
 
