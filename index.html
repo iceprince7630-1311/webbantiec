@@ -561,17 +561,20 @@ let selectedGuest = null;
 
 let androidMode = false;
 
-const androidToggle = document.getElementById("android-mode-toggle");
+document.addEventListener("DOMContentLoaded", () => {
+  const androidToggle = document.getElementById("android-mode-toggle");
+  if (!androidToggle) return;
 
-androidToggle.addEventListener("change", () => {
-  androidMode = androidToggle.checked;
-  document.body.classList.toggle("android-mode", androidMode);
+  androidToggle.addEventListener("change", () => {
+    androidMode = androidToggle.checked;
+    document.body.classList.toggle("android-mode", androidMode);
 
-  // Bật / tắt drag cho toàn bộ khách
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    li.draggable = !androidMode;
+    document.querySelectorAll(".guest-list li").forEach(li => {
+      li.draggable = !androidMode;
+    });
   });
 });
+
 
 /* =======================
    HELPER
