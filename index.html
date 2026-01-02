@@ -1170,6 +1170,33 @@ document.addEventListener("click", e => {
     exportMenu.style.display = "none";
   }
 });
+  
+/* =======================
+   MỞ MODAL PDF 1 BÀN
+   ======================= */
+
+document.getElementById("export-pdf-one").onclick = () => {
+  // Đóng menu xuất
+  exportMenu.style.display = "none";
+
+  // Nạp danh sách bàn vào select
+  pdfTableSelect.innerHTML = "";
+  document.querySelectorAll(".table").forEach((t, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = t.dataset.baseName;
+    pdfTableSelect.appendChild(opt);
+  });
+
+  // Mở modal
+  pdfOneModal.style.display = "flex";
+};
+/* =======================
+   ĐÓNG MODAL PDF 1 BÀN
+   ======================= */
+  document.getElementById("pdf-one-cancel").onclick = () => {
+  pdfOneModal.style.display = "none";
+};
 
 /* =======================
    EXPORT CSV
