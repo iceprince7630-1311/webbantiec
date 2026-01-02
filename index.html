@@ -1009,29 +1009,29 @@ document.getElementById("add-guest").onclick = () => {
    QUICK ADD TRONG BÀN
    ======================= */
 
-document.addEventListener("click", e => {
-  if (!e.target.classList.contains("quick-add-btn")) return;
-  const table = e.target.closest(".table");
-  const box = table.querySelector(".quick-add");
-  const input = box.querySelector(".quick-add-input");
+  /* Quick add */
+  if (e.target.classList.contains("quick-add-btn")) {
+    const box = table.querySelector(".quick-add");
+    box.classList.toggle("hidden");
+    const input = box.querySelector(".quick-add-input");
+    input.focus();
 
-  box.classList.toggle("hidden");
-  input.value = "";
-  input.focus();
-
-  input.onkeydown = ev => {
-    if (ev.key === "Enter") {
-      const name = normalizeName(input.value);
-      if (!name) return;
-      table.querySelector(".guest-list").appendChild(createGuestLi(name));
-      box.classList.add("hidden");
-      updateTable(table);
-      saveState();
-    }
-    if (ev.key === "Escape") box.classList.add("hidden");
-  };
-});
-
+    input.onkeydown = ev => {
+      if (ev.key === "Enter") {
+        const name = normalizeName(input.value);
+        if (name) {
+          table.querySelector(".guest-list").appendChild(createGuestLi(name));
+          updateTable(table);
+          saveState();
+        }
+        input.value = "";
+        box.classList.add("hidden");
+      }
+      if (ev.key === "Escape") {
+        box.classList.add("hidden");
+      }
+    };
+  }
 /* =======================
    MOVE MODAL (ANDROID)
    ======================= */
