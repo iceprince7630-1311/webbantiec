@@ -429,6 +429,41 @@ body.android .android-only {
   border-color: #2563eb;
 }
 
+/* (PHASE 4) thêm Toast */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.8);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease;
+  z-index: 2000;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+body.android-tap .guest-list li {
+  padding: 12px 14px;
+}
+    
+.selected-guest {
+  background: #dbeafe !important;
+  border-color: #2563eb !important;
+}
+    
+body.android-drag .touch-dragging {
+  background: #e0f2fe;
+  border: 1px solid #38bdf8;
+}
+
   </style>
   
 </head>
@@ -622,6 +657,7 @@ body.android .android-only {
 <!-- ROOT IN PDF -->
 <div id="print-root"></div>
 
+<div id="toast" class="toast"></div>
 
 
   
@@ -962,7 +998,8 @@ if (isTouch && !isAndroid) {
     const li = e.target.closest(".guest-list li");
     if (!li) return;
 
-    timer = setTimeout(() => {
+timer = setTimeout(() => {
+      if (androidInteractionMode !== "drag") return;
       touchItem = li;
       const r = li.getBoundingClientRect();
       touchClone = li.cloneNode(true);
@@ -976,23 +1013,40 @@ if (isTouch && !isAndroid) {
   }, { passive: false });
 
   document.addEventListener("touchmove", e => {
-    if (timer) { clearTimeout(timer); timer = null; }
-    if (!touchItem || !touchClone) return;
-    e.preventDefault();
+  if (timer) { 
+    clearTimeout(timer); 
+    timer = null; 
+  }
+  if (!touchItem || !touchClone) return;
 
-    const t = e.touches[0];
-    touchClone.style.left = t.clientX - touchClone.offsetWidth / 2 + "px";
-    touchClone.style.top  = t.clientY - touchClone.offsetHeight / 2 + "px";
+  e.preventDefault();
 
-    const el = document.elementFromPoint(t.clientX, t.clientY);
-    const list = el?.closest(".guest-list");
-    if (!list) return;
+  const t = e.touches[0];
 
-    const after = getDragAfterElement(list, t.clientY);
-    after
-      ? list.insertBefore(dragPlaceholder, after)
-      : list.appendChild(dragPlaceholder);
-  }, { passive: false });
+  const dx = t.clientX - startX;
+  const dy = t.clientY - startY;
+
+  /* =====================================================
+     PHASE 4 — THRESHOLD TRÁNH KÉO NHẦM KHI SCROLL
+     ===================================================== */
+  if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+
+  /* =====================================================
+     TIẾP TỤC DRAG NHƯ CŨ
+     ===================================================== */
+  touchClone.style.left = t.clientX - touchClone.offsetWidth / 2 + "px";
+  touchClone.style.top  = t.clientY - touchClone.offsetHeight / 2 + "px";
+
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const list = el?.closest(".guest-list");
+  if (!list) return;
+
+  const after = getDragAfterElement(list, t.clientY);
+  after
+    ? list.insertBefore(dragPlaceholder, after)
+    : list.appendChild(dragPlaceholder);
+}, { passive: false });
+
 
   document.addEventListener("touchend", () => {
     if (!touchItem) return;
@@ -1009,14 +1063,23 @@ if (isTouch && !isAndroid) {
   });
 }
 
-/* ---------- ANDROID TAP MODE ---------- */
+/* =====================================================
+   ANDROID TAP MODE (PHASE 3 + PHASE 4.2)
+   ===================================================== */
+
+/* ---------- TAP CHỌN KHÁCH ---------- */
 document.addEventListener("click", e => {
-  if (!isAndroid) return;
+  if (!isAndroid || androidInteractionMode !== "tap") return;
+
+  // Phase 4.2 — tránh tap bị hiểu thành scroll
+  e.preventDefault();
+  e.stopPropagation();
 
   const li = e.target.closest(".guest-list li");
   if (!li) return;
   if (deleteMode || editNamesMode) return;
 
+  // Nếu tap vào mũi tên (move-arrow)
   if (e.target.classList.contains("move-arrow")) {
     selectedGuest = li;
     li.classList.add("selected-guest");
@@ -1024,26 +1087,33 @@ document.addEventListener("click", e => {
     return;
   }
 
+  // Nếu tap lại chính khách đang chọn → bỏ chọn
   if (selectedGuest === li) {
     clearSelectedGuest();
     return;
   }
 
+  // Chọn khách mới
   clearSelectedGuest();
   selectedGuest = li;
   li.classList.add("selected-guest");
 });
 
-/* Android: tap bàn để chuyển khách */
+
+/* ---------- TAP BÀN ĐỂ CHUYỂN KHÁCH ---------- */
 tablesEl.addEventListener("click", e => {
-  if (!isAndroid) return;
+  if (!isAndroid || androidInteractionMode !== "tap") return;
+
+  // Phase 4.2 — tránh tap bị hiểu thành scroll
+  e.preventDefault();
+  e.stopPropagation();
 
   const table = e.target.closest(".table");
   if (!table || !selectedGuest) return;
   if (editNamesMode || deleteMode) return;
 
-  const list = table.querySelector(".guest-list");
-  const max  = getTableMax(table);
+  const list  = table.querySelector(".guest-list");
+  const max   = getTableMax(table);
   const count = qsa("li:not(.drag-placeholder)", list).length;
 
   if (count >= max) {
@@ -1058,16 +1128,22 @@ tablesEl.addEventListener("click", e => {
   updateUnassignedView();
 });
 
-/* Android: chặn drag mặc định */
+
+/* ---------- ANDROID: CHẶN DRAG MẶC ĐỊNH ---------- */
 if (isAndroid) {
   document.addEventListener("touchstart", e => {
     const li = e.target.closest("li");
     if (!li || editNamesMode) return;
-    li.draggable = false;
-    li.style.userSelect = "none";
-    li.style.touchAction = "manipulation";
+
+    // Tắt drag khi đang ở TAP MODE
+    if (androidInteractionMode === "tap") {
+      li.draggable = false;
+      li.style.userSelect = "none";
+      li.style.touchAction = "manipulation";
+    }
   }, { passive: true });
 }
+
 </script>
 
 <script>
@@ -1269,6 +1345,7 @@ function loadState() {
   if (isAndroid && state.androidMode) {
     androidInteractionMode = state.androidMode;
   }
+  applyAndroidMode(); /* (PHASE 3) */
 
   /* ---------- FINAL UPDATE ---------- */
   qsa(".table").forEach(updateTableView);
@@ -1670,7 +1747,7 @@ qs("#add-guest").onclick = () => {
 };
 
 /* =====================================================
-   ANDROID MODE TOGGLE (PHASE 2)
+   ANDROID MODE TOGGLE (PHASE 2 + PHASE 4.1)
    ===================================================== */
 
 if (isAndroid) {
@@ -1688,18 +1765,73 @@ if (isAndroid) {
     }
   });
 
-  // Gắn sự kiện
+  // Gắn sự kiện toggle
   buttons.forEach(btn => {
     btn.onclick = () => {
       const mode = btn.dataset.mode;
 
       androidInteractionMode = mode;
       saveState();
+      applyAndroidMode();
 
+      // Cập nhật nút active
       buttons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
+
+      // 🔔 PHASE 4.1 — TOAST HINT
+      if (mode === "tap") {
+        showToast("Chạm khách → chạm bàn để chuyển");
+      } else {
+        showToast("Giữ và kéo để di chuyển khách");
+      }
     };
   });
+}
+
+  
+/* =====================================================
+   ANDROID MODE BEHAVIOR SWITCH (PHASE 3)
+   ===================================================== */
+
+function applyAndroidMode() {
+  if (!isAndroid) return;
+
+  // Reset trạng thái
+  clearSelectedGuest();
+  dragPlaceholder.remove();
+  draggedItem = null;
+
+  const allGuests = qsa(".guest-list li");
+
+  if (androidInteractionMode === "tap") {
+    // Tắt drag
+    allGuests.forEach(li => {
+      li.draggable = false;
+      li.style.touchAction = "manipulation";
+    });
+
+    // Bật tap-to-move
+    document.body.classList.add("android-tap");
+    document.body.classList.remove("android-drag");
+
+  } else {
+    // Bật drag
+    allGuests.forEach(li => {
+      li.draggable = true;
+      li.style.touchAction = "none";
+    });
+
+    // Tắt tap-to-move
+    document.body.classList.add("android-drag");
+    document.body.classList.remove("android-tap");
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2000);
 }
 
 </script>
