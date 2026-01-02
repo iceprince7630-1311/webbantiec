@@ -5,7 +5,7 @@
   <title>Sắp xếp bàn tiệc</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
     
-  <style>
+ <style>
   *{box-sizing:border-box}
   body{
     margin:0;
@@ -169,29 +169,6 @@
     user-select:none;
   }
 
-  /* ==========================
-     MŨI TÊN ANDROID — FIX CUỐI
-     ========================== */
-
-  /* ➡️ LUÔN HIỆN (Android), không phụ thuộc media query */
-  .move-arrow{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    font-size:22px;
-    padding:6px 8px;
-    background:#e5e7eb;
-    border-radius:8px;
-    user-select:none;
-    cursor:pointer;
-    line-height:1;
-  }
-
-  /* Edit mode: ẨN mũi tên */
-  body.edit-names-mode .move-arrow{
-    display:none !important;
-  }
-
   /* Delete X */
   .delete-x{
     font-size:22px !important;
@@ -326,6 +303,47 @@
   .hidden{
     display:none !important;
   }
+
+  /* ==========================
+     ANDROID MODE — FINAL
+     ========================== */
+
+  /* Mặc định: ẩn mũi tên */
+  .move-arrow{
+    display:none;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+    padding:6px 8px;
+    background:#e5e7eb;
+    border-radius:8px;
+    user-select:none;
+    cursor:pointer;
+    line-height:1;
+  }
+
+  /* Android mode: hiện mũi tên */
+  body.android-mode .move-arrow{
+    display:inline-flex;
+  }
+
+  /* Edit mode: ẨN mũi tên */
+  body.edit-names-mode .move-arrow{
+    display:none !important;
+  }
+
+  /* Android mode: không cho click / chọn text tên khách */
+  body.android-mode .guest-name{
+    pointer-events:none;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-touch-callout:none;
+  }
+
+  /* Android mode: không cho kéo */
+  body.android-mode .guest-list li{
+    cursor:default;
+  }
 </style>
 
 
@@ -363,6 +381,12 @@
         </div>
 
         <button id="help-btn" class="btn">❓ Hướng dẫn</button>
+
+        <label id="android-toggle"
+           style="display:flex;align-items:center;gap:6px;font-weight:bold;cursor:pointer">
+        <input type="checkbox" id="android-mode-toggle">
+          Dùng cho Android
+        </label>
 
         <div id="summary">
           Tổng: <span id="total-guests">0</span> khách ·
@@ -502,6 +526,8 @@
 
   <!-- ROOT IN PDF -->
   <div id="print-root"></div>
+
+  
 <script>
 /* =======================
    BƯỚC 1 — KHỞI TẠO BIẾN
@@ -520,15 +546,35 @@ const maxList = document.getElementById("max-list");
 const pdfOneModal = document.getElementById("pdf-one-modal");
 const pdfTableSelect = document.getElementById("pdf-table-select");
 
+/* Touch detect CHỈ dùng cho drag desktop touch */
 const isTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
-const isAndroid = /Android/i.test(navigator.userAgent || "");
+
+/* ❌ BỎ isAndroid — KHÔNG DÙNG NỮA */
 
 let editNamesMode = false;
 let deleteMode = false;
 let selectedGuest = null;
 
 /* =======================
-   BƯỚC 1 — HELPER
+   ANDROID MODE TOGGLE
+   ======================= */
+
+let androidMode = false;
+
+const androidToggle = document.getElementById("android-mode-toggle");
+
+androidToggle.addEventListener("change", () => {
+  androidMode = androidToggle.checked;
+  document.body.classList.toggle("android-mode", androidMode);
+
+  // Bật / tắt drag cho toàn bộ khách
+  document.querySelectorAll(".guest-list li").forEach(li => {
+    li.draggable = !androidMode;
+  });
+});
+
+/* =======================
+   HELPER
    ======================= */
 
 function normalizeName(s){
@@ -542,9 +588,9 @@ function stripQuotes(s){
 function guestNameFromLi(li){
   return li.dataset.name || normalizeName(li.textContent);
 }
-  
+
 /* =======================
-   ANDROID — MỞ MODAL DI CHUYỂN KHÁCH
+   MODAL DI CHUYỂN KHÁCH
    ======================= */
 
 function openMoveModal(li) {
@@ -552,7 +598,6 @@ function openMoveModal(li) {
   const moveList = document.getElementById("move-list");
 
   const fullName = guestNameFromLi(li);
-
   moveList.innerHTML = "";
 
   const title = document.createElement("div");
@@ -561,7 +606,6 @@ function openMoveModal(li) {
   title.textContent = `Đưa tên ${fullName} vào:`;
   moveList.appendChild(title);
 
-  // ===== DANH SÁCH BÀN =====
   document.querySelectorAll(".table").forEach(t => {
     const btn = document.createElement("button");
     btn.className = "btn";
@@ -569,7 +613,6 @@ function openMoveModal(li) {
 
     btn.onclick = () => {
       t.querySelector(".guest-list").appendChild(li);
-
       li.dataset.name = fullName;
       li.querySelector(".guest-name").textContent = fullName;
 
@@ -582,15 +625,12 @@ function openMoveModal(li) {
     moveList.appendChild(btn);
   });
 
-  // ===== CHƯA SẮP XẾP =====
   const unBtn = document.createElement("button");
   unBtn.className = "btn";
   unBtn.textContent = "Chưa sắp xếp";
 
   unBtn.onclick = () => {
     unassigned.appendChild(li);
-
-    // ✅ DÙNG LẠI HÀM CŨ shortName(full)
     const short = shortName(fullName);
     li.dataset.name = short;
     li.querySelector(".guest-name").textContent = short;
@@ -602,22 +642,16 @@ function openMoveModal(li) {
   };
 
   moveList.appendChild(unBtn);
-
   moveModal.style.display = "flex";
 }
-  
-/* =======================
-   ANDROID — ĐÓNG MODAL DI CHUYỂN
-   ======================= */
 
 function closeMoveModal() {
-  const moveModal = document.getElementById("move-modal");
-  moveModal.style.display = "none";
+  document.getElementById("move-modal").style.display = "none";
   selectedGuest = null;
 }
 
 /* =======================
-   TẠO 1 KHÁCH <li> — FINAL FIX
+   TẠO 1 KHÁCH <li>
    ======================= */
 
 function createGuestLi(name){
@@ -630,17 +664,17 @@ function createGuestLi(name){
   span.textContent = clean;
   li.appendChild(span);
 
-  // Desktop: cho drag
-  li.draggable = !isTouch;
+  // Drag phụ thuộc ANDROID MODE
+  li.draggable = !androidMode;
 
-  // ===== LUÔN TẠO MŨI TÊN =====
+  // ===== MŨI TÊN =====
   const arrow = document.createElement("span");
   arrow.className = "move-arrow";
   arrow.textContent = "➡️";
   li.appendChild(arrow);
 
-  // Click mũi tên → mở modal
   arrow.addEventListener("click", (e) => {
+    if (!androidMode) return;
     e.preventDefault();
     e.stopPropagation();
     if (editNamesMode) return;
@@ -650,12 +684,10 @@ function createGuestLi(name){
   return li;
 }
 
-
-// Nút hủy modal
 document.getElementById("move-cancel").onclick = closeMoveModal;
 
 /* =======================
-   RÚT GỌN TÊN (HÀM CŨ)
+   RÚT GỌN TÊN
    ======================= */
 
 function shortName(full){
@@ -671,128 +703,7 @@ function clearSelectedGuest(){
   }
 }
 
-/* =======================
-   BƯỚC 2 — TẠO BÀN
-   ======================= */
 
-function createTable(name, max = 10, guests = []) {
-  const table = document.createElement("div");
-  table.className = "table";
-  table.dataset.max = String(max);
-  table.dataset.baseName = normalizeName(name) || "Bàn";
-
-  table.innerHTML = `
-    <div class="table-header">
-      <h3 class="table-title"></h3>
-      <div class="table-actions">
-        <button class="quick-add-btn">➕</button>
-        <button class="edit-table-btn">✏️</button>
-        <button class="delete-table-btn">🗑️</button>
-      </div>
-    </div>
-
-    <div class="quick-add hidden">
-      <input class="quick-add-input" placeholder="Nhập tên khách..." />
-      <div class="quick-add-hint">Enter · Esc</div>
-    </div>
-
-    <ul class="guest-list"></ul>
-    <div class="table-warning hidden"></div>
-  `;
-
-  const ul = table.querySelector(".guest-list");
-  guests.forEach(g => ul.appendChild(createGuestLi(g)));
-
-  tablesEl.appendChild(table);
-  updateTable(table);
-}
-
-/* =======================
-   UPDATE BÀN — BẢN FIX
-   ======================= */
-
-function updateTable(table) {
-  const list = table.querySelector(".guest-list");
-
-  list.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
-    const span = li.querySelector(".guest-name");
-    if (span) span.textContent = li.dataset.name;
-  });
-
-  const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
-  const max = parseInt(table.dataset.max, 10);
-  const name = normalizeName(table.dataset.baseName || "Bàn");
-
-  table.querySelector(".table-title").textContent = `${name} (${count}/${max})`;
-
-  const warning = table.querySelector(".table-warning");
-
-  if (count > max) {
-    table.classList.add("over");
-    warning.innerHTML = `⚠️ Bàn đã dư người (${count - max})<br>
-      <button class="auto-fix-btn">Auto đưa về Chưa sắp xếp</button>`;
-    warning.classList.remove("hidden");
-  } else {
-    table.classList.remove("over");
-    warning.classList.add("hidden");
-    warning.innerHTML = "";
-  }
-
-  updateSummary();
-}
-
-/* =======================
-   UPDATE TỔNG
-   ======================= */
-
-function updateSummary() {
-  document.getElementById("total-tables").textContent =
-    document.querySelectorAll(".table").length;
-
-  document.getElementById("total-guests").textContent =
-    document.querySelectorAll(".guest-list li:not(.drag-placeholder)").length;
-}
-
-/* =======================
-   UPDATE UNASSIGNED — BẢN FIX
-   ======================= */
-
-function updateUnassignedView() {
-  const list = document.getElementById("unassigned");
-  const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
-  const count = items.length;
-
-  const setLiText = (li, text) => {
-    const span = li.querySelector(".guest-name");
-    if (span) span.textContent = text;
-  };
-
-  if (editNamesMode) {
-    items.forEach(li => setLiText(li, li.dataset.name));
-    list.style.display = count < 20 ? "block" : "grid";
-    list.style.gridTemplateColumns = count < 20 ? "" : "repeat(2,1fr)";
-    return;
-  }
-
-  items.forEach(li => setLiText(li, li.dataset.name));
-
-  if (count < 20) {
-    list.style.display = "block";
-    list.style.gridTemplateColumns = "";
-    return;
-  }
-
-  items.forEach(li => setLiText(li, shortName(li.dataset.name)));
-
-  list.style.display = "grid";
-  list.style.gridTemplateColumns = "repeat(2,1fr)";
-}
-</script>
-<!-- =======================
-     PHẦN 4 — DRAG / TOUCH / ANDROID / DELETE / EDIT NAME (FIX)
-     ======================= -->
-
-<script>
 /* =======================
    BƯỚC 4 — DRAG WINDOWS
    ======================= */
@@ -812,51 +723,69 @@ function getDragAfterElement(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
 }
 
-if (!isAndroid) {
-  document.addEventListener("dragstart", e => {
-    if (e.target.tagName !== "LI") return;
-    draggedItem = e.target;
-    draggedItem.classList.add("dragging");
-    e.dataTransfer.setData("", "");
-  });
-
-  document.addEventListener("dragover", e => {
-    const list = e.target.closest(".guest-list");
-    if (!list || !draggedItem) return;
-    e.preventDefault();
-    const after = getDragAfterElement(list, e.clientY);
-    after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
-  });
-
-  document.addEventListener("drop", e => {
-    const list = e.target.closest(".guest-list");
-    if (!list || !draggedItem) return;
-    e.preventDefault();
-    list.insertBefore(draggedItem, placeholder);
-    placeholder.remove();
+function finalizeDropAndRefresh() {
+  placeholder.remove();
+  if (draggedItem) {
     draggedItem.classList.remove("dragging");
     draggedItem = null;
-    document.querySelectorAll(".table").forEach(updateTable);
-    saveState();
-    setTimeout(updateUnassignedView, 0);
-  });
-
-  document.addEventListener("dragend", () => {
-    placeholder.remove();
-    setTimeout(updateUnassignedView, 0);
-  });
+  }
+  document.querySelectorAll(".table").forEach(updateTable);
+  saveState();
+  setTimeout(updateUnassignedView, 0);
 }
+
+/* Drag CHỈ chạy khi KHÔNG Android mode */
+document.addEventListener("dragstart", e => {
+  if (androidMode) return;
+  const li = e.target?.closest?.(".guest-list li");
+  if (!li) return;
+  draggedItem = li;
+  draggedItem.classList.add("dragging");
+  if (e.dataTransfer) e.dataTransfer.setData("", "");
+});
+
+document.addEventListener("dragover", e => {
+  if (androidMode) return;
+  const list = e.target.closest(".guest-list");
+  if (!list || !draggedItem) return;
+  e.preventDefault();
+  const after = getDragAfterElement(list, e.clientY);
+  after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
+});
+
+document.addEventListener("drop", e => {
+  if (androidMode) return;
+  const list = e.target.closest(".guest-list");
+  if (!list || !draggedItem) return;
+  e.preventDefault();
+  list.insertBefore(draggedItem, placeholder);
+  finalizeDropAndRefresh();
+});
+
+document.addEventListener("dragend", () => {
+  if (androidMode) return;
+  finalizeDropAndRefresh();
+});
 
 /* =======================
    BƯỚC 5 — TOUCH DRAG (WINDOWS TOUCH)
    ======================= */
 
-if (isTouch && !isAndroid) {
+/* Touch drag CHỈ dùng cho Windows touch, KHÔNG Android mode */
+if (isTouch) {
   let touchItem = null;
   let touchClone = null;
   let timer = null;
 
+  const cleanupTouchDrag = () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (touchClone) { touchClone.remove(); touchClone = null; }
+    if (touchItem) { touchItem.style.visibility = ""; touchItem = null; }
+    placeholder.remove();
+  };
+
   document.addEventListener("touchstart", e => {
+    if (androidMode) return;
     const li = e.target.closest(".guest-list li");
     if (!li) return;
 
@@ -871,58 +800,79 @@ if (isTouch && !isAndroid) {
       li.parentElement.insertBefore(placeholder, li);
       li.style.visibility = "hidden";
     }, 200);
-  }, { passive: false });
+  }, { passive: true });
 
   document.addEventListener("touchmove", e => {
+    if (androidMode) return;
     if (timer) { clearTimeout(timer); timer = null; }
     if (!touchItem || !touchClone) return;
+
     e.preventDefault();
     const t = e.touches[0];
-    touchClone.style.left = t.clientX - touchClone.offsetWidth / 2 + "px";
-    touchClone.style.top = t.clientY - touchClone.offsetHeight / 2 + "px";
+    touchClone.style.left = (t.clientX - touchClone.offsetWidth / 2) + "px";
+    touchClone.style.top  = (t.clientY - touchClone.offsetHeight / 2) + "px";
+
     const el = document.elementFromPoint(t.clientX, t.clientY);
-    const list = el?.closest(".guest-list");
+    const list = el?.closest?.(".guest-list");
     if (!list) return;
+
     const after = getDragAfterElement(list, t.clientY);
     after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
   }, { passive: false });
 
   document.addEventListener("touchend", () => {
-    if (!touchItem) return;
+    if (androidMode) return;
+    if (!touchItem) { cleanupTouchDrag(); return; }
     placeholder.parentElement.insertBefore(touchItem, placeholder);
-    touchItem.style.visibility = "";
-    placeholder.remove();
-    if (touchClone) touchClone.remove();
-    touchItem = null;
-    touchClone = null;
+    cleanupTouchDrag();
     document.querySelectorAll(".table").forEach(updateTable);
     saveState();
     setTimeout(updateUnassignedView, 0);
-  });
+  }, { passive: true });
+
+  document.addEventListener("touchcancel", () => {
+    cleanupTouchDrag();
+  }, { passive: true });
 }
 
 /* =======================
-   BƯỚC 6 — ANDROID MODE (FIX)
+   BƯỚC 6 — ANDROID GUARDRAILS
    ======================= */
 
-/* ❌ ĐÃ LOẠI BỎ ANDROID MODE CŨ
-   - Không còn click chọn khách
-   - Không còn tap bàn để chuyển
-   - Không còn openMoveGuestModal (sai hàm)
-   - Android chỉ dùng MODAL chọn bàn
+/*
+  Mục tiêu:
+  - Android MODE KHÔNG kéo-thả, KHÔNG long-press kéo text.
+  - Chỉ dùng mũi tên ➡️ để mở modal.
+  - Không phá editNamesMode.
 */
 
-/* Android: chặn drag mặc định (FIX) */
-if (isAndroid) {
-  document.addEventListener("touchstart", e => {
-    const li = e.target.closest("li");
-    if (!li) return;
-    if (editNamesMode) return;
-    li.draggable = false;
-    li.style.userSelect = "none";
-    li.style.touchAction = "none"; // FIX: không cho browser kéo
-  }, { passive: false });
-}
+document.addEventListener("dragstart", e => {
+  if (!androidMode) return;
+  if (e.target?.closest?.(".guest-list li")) {
+    e.preventDefault();
+  }
+});
+
+document.addEventListener("touchstart", e => {
+  if (!androidMode) return;
+  const li = e.target.closest(".guest-list li");
+  if (!li) return;
+  if (editNamesMode) return;
+
+  li.draggable = false;
+  li.style.userSelect = "none";
+  li.style.webkitUserSelect = "none";
+  li.style.webkitUserDrag = "none";
+  li.style.touchAction = "none";
+}, { passive: true });
+
+document.addEventListener("contextmenu", e => {
+  if (!androidMode) return;
+  if (editNamesMode) return;
+  if (e.target?.closest?.(".guest-list")) {
+    e.preventDefault();
+  }
+});
 
 /* =======================
    BƯỚC 7 — DELETE MODE
@@ -934,7 +884,7 @@ const deleteCancelBtn = document.getElementById("delete-cancel-btn");
 
 deleteBtn.onclick = () => {
   deleteMode = true;
-  clearSelectedGuest();
+  clearSelectedGuest?.();
   document.body.classList.add("delete-mode");
 
   deleteBtn.classList.add("hidden");
@@ -975,7 +925,6 @@ deleteConfirmBtn.onclick = () => {
   updateUnassignedView();
 };
 
-/* Click vào dấu X */
 document.addEventListener("click", e => {
   if (!deleteMode) return;
   if (e.target.classList.contains("delete-x")) {
@@ -995,7 +944,7 @@ const editCancel = document.getElementById("edit-names-cancel");
 
 editBtn.onclick = () => {
   editNamesMode = true;
-  clearSelectedGuest();
+  clearSelectedGuest?.();
   document.body.classList.add("edit-names-mode");
   document.getElementById("toolbar-blocker").style.pointerEvents = "auto";
 
@@ -1010,6 +959,7 @@ editBtn.onclick = () => {
     if (span) span.contentEditable = "true";
   });
 
+  // Tắt drag trong lúc edit (mọi chế độ)
   document.querySelectorAll(".guest-list li").forEach(li => {
     li.draggable = false;
   });
@@ -1031,8 +981,9 @@ editCancel.onclick = () => {
   document.body.classList.remove("edit-names-mode");
   document.getElementById("toolbar-blocker").style.pointerEvents = "none";
 
+  // Khôi phục drag theo ANDROID MODE
   document.querySelectorAll(".guest-list li").forEach(li => {
-    li.draggable = !isAndroid;
+    li.draggable = !androidMode;
   });
 
   editBtn.classList.remove("hidden");
@@ -1058,7 +1009,7 @@ editSave.onclick = () => {
   document.getElementById("toolbar-blocker").style.pointerEvents = "none";
 
   document.querySelectorAll(".guest-list li").forEach(li => {
-    li.draggable = !isAndroid;
+    li.draggable = !androidMode;
   });
 
   editBtn.classList.remove("hidden");
@@ -1069,6 +1020,7 @@ editSave.onclick = () => {
   saveState();
   updateUnassignedView();
 };
+
 </script>
 
 <!-- =======================
@@ -1094,6 +1046,7 @@ document.getElementById("clear-btn").onclick = () => {
 
 function saveState() {
   const state = {
+    androidMode, // ✅ LƯU ANDROID TOGGLE
     tables: [...document.querySelectorAll(".table")].map(t => ({
       name: t.dataset.baseName,
       max: t.dataset.max,
@@ -1125,6 +1078,15 @@ function saveState() {
     createTable("Bàn 1");
     updateSummary();
     return;
+  }
+
+  /* ✅ KHÔI PHỤC ANDROID TOGGLE */
+  if (s.androidMode) {
+    const toggle = document.getElementById("android-mode-toggle");
+    if (toggle) {
+      toggle.checked = true;
+      toggle.dispatchEvent(new Event("change"));
+    }
   }
 
   if (!s.tables || !Array.isArray(s.tables)) {
@@ -1221,10 +1183,8 @@ document.addEventListener("click", e => {
    ======================= */
 
 document.getElementById("export-pdf-one").onclick = () => {
-  // Đóng menu xuất
   exportMenu.style.display = "none";
 
-  // Nạp danh sách bàn vào select
   pdfTableSelect.innerHTML = "";
   document.querySelectorAll(".table").forEach((t, i) => {
     const opt = document.createElement("option");
@@ -1233,15 +1193,18 @@ document.getElementById("export-pdf-one").onclick = () => {
     pdfTableSelect.appendChild(opt);
   });
 
-  // Mở modal
   pdfOneModal.style.display = "flex";
 };
+
 /* =======================
    ĐÓNG MODAL PDF 1 BÀN
    ======================= */
-  document.getElementById("pdf-one-cancel").onclick = () => {
+
+document.getElementById("pdf-one-cancel").onclick = () => {
   pdfOneModal.style.display = "none";
 };
+
+
 
 /* =======================
    EXPORT CSV
