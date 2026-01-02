@@ -685,7 +685,11 @@ const pdfTableSelect= document.getElementById("pdf-table-select");
 
 /* ---------- ENV DETECT ---------- */
 const isTouch   = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
-const isAndroid = /Android/i.test(navigator.userAgent || "");
+const isAndroid =
+  /Android/i.test(navigator.userAgent) ||
+  (navigator.userAgentData && navigator.userAgentData.platform === "Android") ||
+  (navigator.platform && navigator.platform.toLowerCase().includes("android"));
+
 
 /* ---------- GLOBAL STATE ---------- */
 let editNamesMode   = false;
