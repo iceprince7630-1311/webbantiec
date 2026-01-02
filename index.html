@@ -170,11 +170,14 @@
   }
 
   /* ==========================
-     MŨI TÊN ANDROID — FIX CHUẨN
+     MŨI TÊN ANDROID — FIX CUỐI
      ========================== */
 
+  /* ➡️ LUÔN HIỆN (Android), không phụ thuộc media query */
   .move-arrow{
-    display:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
     font-size:22px;
     padding:6px 8px;
     background:#e5e7eb;
@@ -182,15 +185,6 @@
     user-select:none;
     cursor:pointer;
     line-height:1;
-  }
-
-  /* Android: LUÔN HIỆN mũi tên */
-  @media (pointer: coarse){
-    .move-arrow{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-    }
   }
 
   /* Edit mode: ẨN mũi tên */
@@ -333,6 +327,7 @@
     display:none !important;
   }
 </style>
+
 
 </head>
 <body>
