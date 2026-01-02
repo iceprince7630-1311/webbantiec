@@ -541,7 +541,7 @@
   
 <script>
 /* =======================
-   BƯỚC 1 — KHỞI TẠO BIẾN
+   KHỞI TẠO BIẾN TOÀN CỤC
    ======================= */
 
 const tablesEl = document.getElementById("tables");
@@ -557,29 +557,27 @@ const maxList = document.getElementById("max-list");
 const pdfOneModal = document.getElementById("pdf-one-modal");
 const pdfTableSelect = document.getElementById("pdf-table-select");
 
-/* Touch detect CHỈ dùng cho drag desktop touch */
+const androidToggle = document.getElementById("android-mode-toggle");
+let androidMode = false;
+
 const isTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
-
-/* ❌ BỎ isAndroid — KHÔNG DÙNG NỮA */
-
 let editNamesMode = false;
 let deleteMode = false;
 let selectedGuest = null;
+let originalNames = new Map();
 
 /* =======================
-   ANDROID MODE TOGGLE
+   ANDROID TOGGLE INIT
    ======================= */
-
-const androidToggle = document.getElementById("android-mode-toggle");
 
 if (androidToggle) {
   androidToggle.addEventListener("change", () => {
     androidMode = androidToggle.checked;
     document.body.classList.toggle("android-mode", androidMode);
-
     document.querySelectorAll(".guest-list li").forEach(li => {
       li.draggable = !androidMode;
     });
+    saveState();
   });
 }
 
@@ -590,78 +588,26 @@ if (androidToggle) {
 function normalizeName(s){
   return String(s||"").trim().replace(/\s+/g," ");
 }
-
 function stripQuotes(s){
   return String(s || "").replace(/^"(.*)"$/, "$1").trim();
 }
-
 function guestNameFromLi(li){
   return li.dataset.name || normalizeName(li.textContent);
 }
-
-/* =======================
-   MODAL DI CHUYỂN KHÁCH
-   ======================= */
-
-function openMoveModal(li) {
-  const moveModal = document.getElementById("move-modal");
-  const moveList = document.getElementById("move-list");
-
-  const fullName = guestNameFromLi(li);
-  moveList.innerHTML = "";
-
-  const title = document.createElement("div");
-  title.style.fontWeight = "bold";
-  title.style.marginBottom = "8px";
-  title.textContent = `Đưa tên ${fullName} vào:`;
-  moveList.appendChild(title);
-
-  document.querySelectorAll(".table").forEach(t => {
-    const btn = document.createElement("button");
-    btn.className = "btn";
-    btn.textContent = t.dataset.baseName;
-
-    btn.onclick = () => {
-      t.querySelector(".guest-list").appendChild(li);
-      li.dataset.name = fullName;
-      li.querySelector(".guest-name").textContent = fullName;
-
-      closeMoveModal();
-      updateTable(t);
-      updateSummary();
-      saveState();
-    };
-
-    moveList.appendChild(btn);
-  });
-
-  const unBtn = document.createElement("button");
-  unBtn.className = "btn";
-  unBtn.textContent = "Chưa sắp xếp";
-
-  unBtn.onclick = () => {
-    unassigned.appendChild(li);
-    const short = shortName(fullName);
-    li.dataset.name = short;
-    li.querySelector(".guest-name").textContent = short;
-
-    closeMoveModal();
-    updateUnassignedView();
-    updateSummary();
-    saveState();
-  };
-
-  moveList.appendChild(unBtn);
-  moveModal.style.display = "flex";
+function shortName(full){
+  const parts = full.trim().split(/\s+/);
+  if(parts.length <= 2) return full;
+  return parts.slice(-2).join(" ");
 }
-
-function closeMoveModal() {
-  document.getElementById("move-modal").style.display = "none";
-  selectedGuest = null;
+function clearSelectedGuest(){
+  if(selectedGuest){
+    selectedGuest.classList.remove("selected-guest");
+    selectedGuest = null;
+  }
 }
 
 /* =======================
-   TẠO 1 KHÁCH <li>
+   TẠO KHÁCH <li>
    ======================= */
 
 function createGuestLi(name){
@@ -674,48 +620,174 @@ function createGuestLi(name){
   span.textContent = clean;
   li.appendChild(span);
 
-  // Drag phụ thuộc ANDROID MODE
   li.draggable = !androidMode;
 
-  // ===== MŨI TÊN =====
   const arrow = document.createElement("span");
   arrow.className = "move-arrow";
   arrow.textContent = "➡️";
   li.appendChild(arrow);
 
   arrow.addEventListener("click", (e) => {
-    if (!androidMode) return;
+    if (!androidMode || editNamesMode) return;
     e.preventDefault();
     e.stopPropagation();
-    if (editNamesMode) return;
     openMoveModal(li);
   });
 
   return li;
 }
 
-document.getElementById("move-cancel").onclick = closeMoveModal;
-
 /* =======================
-   RÚT GỌN TÊN
+   TẠO BÀN
    ======================= */
 
-function shortName(full){
-  const parts = full.trim().split(/\s+/);
-  if(parts.length <= 2) return full;
-  return parts.slice(-2).join(" ");
-}
+function createTable(name, max = 10, guests = []) {
+  const table = document.createElement("div");
+  table.className = "table";
+  table.dataset.max = String(max);
+  table.dataset.baseName = normalizeName(name) || "Bàn";
 
-function clearSelectedGuest(){
-  if(selectedGuest){
-    selectedGuest.classList.remove("selected-guest");
-    selectedGuest = null;
-  }
-}
+  table.innerHTML = `
+    <div class="table-header">
+      <h3 class="table-title"></h3>
+      <div class="table-actions">
+        <button class="quick-add-btn">➕</button>
+        <button class="edit-table-btn">✏️</button>
+        <button class="delete-table-btn">🗑️</button>
+      </div>
+    </div>
+    <div class="quick-add hidden">
+      <input class="quick-add-input" placeholder="Nhập tên khách..." />
+      <div class="quick-add-hint">Enter · Esc</div>
+    </div>
+    <ul class="guest-list"></ul>
+    <div class="table-warning hidden"></div>
+  `;
 
+  const ul = table.querySelector(".guest-list");
+  guests.forEach(g => ul.appendChild(createGuestLi(g)));
+
+  tablesEl.appendChild(table);
+  updateTable(table);
+}
 
 /* =======================
-   BƯỚC 4 — DRAG WINDOWS
+   UPDATE BÀN
+   ======================= */
+
+function updateTable(table) {
+  const list = table.querySelector(".guest-list");
+
+  list.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
+    const span = li.querySelector(".guest-name");
+    if (span) span.textContent = li.dataset.name;
+  });
+
+  const count = list.querySelectorAll("li:not(.drag-placeholder)").length;
+  const max = parseInt(table.dataset.max, 10);
+  const name = normalizeName(table.dataset.baseName || "Bàn");
+
+  table.querySelector(".table-title").textContent = `${name} (${count}/${max})`;
+
+  const warning = table.querySelector(".table-warning");
+
+  if (count > max) {
+    table.classList.add("over");
+    warning.innerHTML = `⚠️ Bàn đã dư người (${count - max})<br>
+      <button class="auto-fix-btn">Auto đưa về Chưa sắp xếp</button>`;
+    warning.classList.remove("hidden");
+  } else {
+    table.classList.remove("over");
+    warning.classList.add("hidden");
+    warning.innerHTML = "";
+  }
+
+  updateSummary();
+}
+
+/* =======================
+   UPDATE TỔNG
+   ======================= */
+
+function updateSummary() {
+  document.getElementById("total-tables").textContent =
+    document.querySelectorAll(".table").length;
+
+  document.getElementById("total-guests").textContent =
+    document.querySelectorAll(".guest-list li:not(.drag-placeholder)").length;
+}
+
+/* =======================
+   UPDATE UNASSIGNED
+   ======================= */
+
+function updateUnassignedView() {
+  const list = document.getElementById("unassigned");
+  const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
+  const count = items.length;
+
+  const setLiText = (li, text) => {
+    const span = li.querySelector(".guest-name");
+    if (span) span.textContent = text;
+  };
+
+  if (editNamesMode) {
+    items.forEach(li => setLiText(li, li.dataset.name));
+    list.style.display = count < 20 ? "block" : "grid";
+    list.style.gridTemplateColumns = count < 20 ? "" : "repeat(2,1fr)";
+    return;
+  }
+
+  items.forEach(li => setLiText(li, shortName(li.dataset.name)));
+
+  list.style.display = count < 20 ? "block" : "grid";
+  list.style.gridTemplateColumns = count < 20 ? "" : "repeat(2,1fr)";
+}
+
+/* =======================
+   LOAD DỮ LIỆU
+   ======================= */
+
+(function load() {
+  const raw = localStorage.getItem("wedding_state");
+  if (!raw) {
+    createTable("Bàn 1");
+    updateSummary();
+    return;
+  }
+
+  let s;
+  try {
+    s = JSON.parse(raw);
+  } catch (e) {
+    console.error("Lỗi parse state, reset dữ liệu", e);
+    localStorage.removeItem("wedding_state");
+    createTable("Bàn 1");
+    updateSummary();
+    return;
+  }
+
+  if (s.androidMode) {
+    androidToggle.checked = true;
+    androidToggle.dispatchEvent(new Event("change"));
+  }
+
+  if (!s.tables || !Array.isArray(s.tables)) {
+    createTable("Bàn 1");
+    updateSummary();
+    return;
+  }
+
+  s.tables.forEach(t => createTable(t.name, t.max, t.guests || []));
+  (s.unassigned || []).forEach(n => unassigned.appendChild(createGuestLi(n)));
+
+  document.querySelectorAll(".table").forEach(updateTable);
+  updateUnassignedView();
+})();
+</script>
+<script>
+/* =======================
+   DRAG WINDOWS (DESKTOP)
    ======================= */
 
 let draggedItem = null;
@@ -744,53 +816,53 @@ function finalizeDropAndRefresh() {
   setTimeout(updateUnassignedView, 0);
 }
 
-/* Drag CHỈ chạy khi KHÔNG Android mode */
 document.addEventListener("dragstart", e => {
   if (androidMode) return;
-  const li = e.target?.closest?.(".guest-list li");
+  const li = e.target.closest(".guest-list li");
   if (!li) return;
   draggedItem = li;
-  draggedItem.classList.add("dragging");
-  if (e.dataTransfer) e.dataTransfer.setData("", "");
+  li.classList.add("dragging");
+  e.dataTransfer?.setData("", "");
 });
 
 document.addEventListener("dragover", e => {
-  if (androidMode) return;
+  if (androidMode || !draggedItem) return;
   const list = e.target.closest(".guest-list");
-  if (!list || !draggedItem) return;
+  if (!list) return;
   e.preventDefault();
   const after = getDragAfterElement(list, e.clientY);
   after ? list.insertBefore(placeholder, after) : list.appendChild(placeholder);
 });
 
 document.addEventListener("drop", e => {
-  if (androidMode) return;
+  if (androidMode || !draggedItem) return;
   const list = e.target.closest(".guest-list");
-  if (!list || !draggedItem) return;
+  if (!list) return;
   e.preventDefault();
   list.insertBefore(draggedItem, placeholder);
   finalizeDropAndRefresh();
 });
 
 document.addEventListener("dragend", () => {
-  if (androidMode) return;
-  finalizeDropAndRefresh();
+  if (!androidMode) finalizeDropAndRefresh();
 });
 
 /* =======================
-   BƯỚC 5 — TOUCH DRAG (WINDOWS TOUCH)
+   TOUCH DRAG (WINDOWS TOUCH)
    ======================= */
 
-/* Touch drag CHỈ dùng cho Windows touch, KHÔNG Android mode */
 if (isTouch) {
   let touchItem = null;
   let touchClone = null;
   let timer = null;
 
-  const cleanupTouchDrag = () => {
-    if (timer) { clearTimeout(timer); timer = null; }
-    if (touchClone) { touchClone.remove(); touchClone = null; }
-    if (touchItem) { touchItem.style.visibility = ""; touchItem = null; }
+  const cleanup = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    touchClone?.remove();
+    touchClone = null;
+    if (touchItem) touchItem.style.visibility = "";
+    touchItem = null;
     placeholder.remove();
   };
 
@@ -813,17 +885,14 @@ if (isTouch) {
   }, { passive: true });
 
   document.addEventListener("touchmove", e => {
-    if (androidMode) return;
-    if (timer) { clearTimeout(timer); timer = null; }
-    if (!touchItem || !touchClone) return;
-
+    if (androidMode || !touchItem || !touchClone) return;
     e.preventDefault();
     const t = e.touches[0];
     touchClone.style.left = (t.clientX - touchClone.offsetWidth / 2) + "px";
-    touchClone.style.top  = (t.clientY - touchClone.offsetHeight / 2) + "px";
+    touchClone.style.top = (t.clientY - touchClone.offsetHeight / 2) + "px";
 
     const el = document.elementFromPoint(t.clientX, t.clientY);
-    const list = el?.closest?.(".guest-list");
+    const list = el?.closest(".guest-list");
     if (!list) return;
 
     const after = getDragAfterElement(list, t.clientY);
@@ -831,61 +900,19 @@ if (isTouch) {
   }, { passive: false });
 
   document.addEventListener("touchend", () => {
-    if (androidMode) return;
-    if (!touchItem) { cleanupTouchDrag(); return; }
+    if (!touchItem) return cleanup();
     placeholder.parentElement.insertBefore(touchItem, placeholder);
-    cleanupTouchDrag();
+    cleanup();
     document.querySelectorAll(".table").forEach(updateTable);
     saveState();
-    setTimeout(updateUnassignedView, 0);
-  }, { passive: true });
+    updateUnassignedView();
+  });
 
-  document.addEventListener("touchcancel", () => {
-    cleanupTouchDrag();
-  }, { passive: true });
+  document.addEventListener("touchcancel", cleanup);
 }
 
 /* =======================
-   BƯỚC 6 — ANDROID GUARDRAILS
-   ======================= */
-
-/*
-  Mục tiêu:
-  - Android MODE KHÔNG kéo-thả, KHÔNG long-press kéo text.
-  - Chỉ dùng mũi tên ➡️ để mở modal.
-  - Không phá editNamesMode.
-*/
-
-document.addEventListener("dragstart", e => {
-  if (!androidMode) return;
-  if (e.target?.closest?.(".guest-list li")) {
-    e.preventDefault();
-  }
-});
-
-document.addEventListener("touchstart", e => {
-  if (!androidMode) return;
-  const li = e.target.closest(".guest-list li");
-  if (!li) return;
-  if (editNamesMode) return;
-
-  li.draggable = false;
-  li.style.userSelect = "none";
-  li.style.webkitUserSelect = "none";
-  li.style.webkitUserDrag = "none";
-  li.style.touchAction = "none";
-}, { passive: true });
-
-document.addEventListener("contextmenu", e => {
-  if (!androidMode) return;
-  if (editNamesMode) return;
-  if (e.target?.closest?.(".guest-list")) {
-    e.preventDefault();
-  }
-});
-
-/* =======================
-   BƯỚC 7 — DELETE MODE
+   DELETE MODE
    ======================= */
 
 const deleteBtn = document.getElementById("delete-mode-btn");
@@ -894,14 +921,12 @@ const deleteCancelBtn = document.getElementById("delete-cancel-btn");
 
 deleteBtn.onclick = () => {
   deleteMode = true;
-  clearSelectedGuest?.();
   document.body.classList.add("delete-mode");
-
   deleteBtn.classList.add("hidden");
   deleteConfirmBtn.classList.remove("hidden");
   deleteCancelBtn.classList.remove("hidden");
 
-  document.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => {
+  document.querySelectorAll(".guest-list li").forEach(li => {
     if (!li.querySelector(".delete-x")) {
       const x = document.createElement("span");
       x.textContent = "✖";
@@ -915,20 +940,15 @@ deleteBtn.onclick = () => {
 deleteCancelBtn.onclick = () => {
   deleteMode = false;
   document.body.classList.remove("delete-mode");
-
   deleteBtn.classList.remove("hidden");
   deleteConfirmBtn.classList.add("hidden");
   deleteCancelBtn.classList.add("hidden");
-
   document.querySelectorAll(".delete-x").forEach(x => x.remove());
-  document.querySelectorAll(".marked-delete").forEach(li => li.classList.remove("marked-delete"));
 };
 
 deleteConfirmBtn.onclick = () => {
   if (!confirm("Xóa các khách mời đã chọn?")) return;
-
   document.querySelectorAll(".marked-delete").forEach(li => li.remove());
-
   deleteCancelBtn.onclick();
   document.querySelectorAll(".table").forEach(updateTable);
   saveState();
@@ -936,111 +956,29 @@ deleteConfirmBtn.onclick = () => {
 };
 
 document.addEventListener("click", e => {
-  if (!deleteMode) return;
-  if (e.target.classList.contains("delete-x")) {
+  if (deleteMode && e.target.classList.contains("delete-x")) {
     e.target.closest("li").classList.toggle("marked-delete");
   }
 });
 
 /* =======================
-   BƯỚC 8 — EDIT NAME MODE
-   ======================= */
-
-let originalNames = new Map();
-
-const editBtn = document.getElementById("edit-names-btn");
-const editSave = document.getElementById("edit-names-save");
-const editCancel = document.getElementById("edit-names-cancel");
-
-editBtn.onclick = () => {
-  editNamesMode = true;
-  clearSelectedGuest?.();
-  document.body.classList.add("edit-names-mode");
-  document.getElementById("toolbar-blocker").style.pointerEvents = "auto";
-
-  editBtn.classList.add("hidden");
-  editSave.classList.remove("hidden");
-  editCancel.classList.remove("hidden");
-
-  originalNames.clear();
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    originalNames.set(li, li.dataset.name);
-    const span = li.querySelector(".guest-name");
-    if (span) span.contentEditable = "true";
-  });
-
-  // Tắt drag trong lúc edit (mọi chế độ)
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    li.draggable = false;
-  });
-
-  updateUnassignedView();
-};
-
-editCancel.onclick = () => {
-  originalNames.forEach((oldName, li) => {
-    li.dataset.name = oldName;
-    const span = li.querySelector(".guest-name");
-    if (span) {
-      span.textContent = oldName;
-      span.contentEditable = "false";
-    }
-  });
-
-  editNamesMode = false;
-  document.body.classList.remove("edit-names-mode");
-  document.getElementById("toolbar-blocker").style.pointerEvents = "none";
-
-  // Khôi phục drag theo ANDROID MODE
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    li.draggable = !androidMode;
-  });
-
-  editBtn.classList.remove("hidden");
-  editSave.classList.add("hidden");
-  editCancel.classList.add("hidden");
-
-  document.querySelectorAll(".table").forEach(updateTable);
-  updateUnassignedView();
-};
-
-editSave.onclick = () => {
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    const span = li.querySelector(".guest-name");
-    if (!span) return;
-    const newName = normalizeName(span.textContent.trim());
-    li.dataset.name = newName;
-    span.textContent = newName;
-    span.contentEditable = "false";
-  });
-
-  editNamesMode = false;
-  document.body.classList.remove("edit-names-mode");
-  document.getElementById("toolbar-blocker").style.pointerEvents = "none";
-
-  document.querySelectorAll(".guest-list li").forEach(li => {
-    li.draggable = !androidMode;
-  });
-
-  editBtn.classList.remove("hidden");
-  editSave.classList.add("hidden");
-  editCancel.classList.add("hidden");
-
-  document.querySelectorAll(".table").forEach(updateTable);
-  saveState();
-  updateUnassignedView();
-};
-
-</script>
-
-<!-- =======================
-     PHẦN 5 — SAVE / LOAD / IMPORT / EXPORT / ADD TABLE / MAX / MOVE
-     ======================= -->
-
-<script>
-/* =======================
    SAVE / LOAD
    ======================= */
+
+function saveState() {
+  const state = {
+    androidMode,
+    tables: [...document.querySelectorAll(".table")].map(t => ({
+      name: t.dataset.baseName,
+      max: t.dataset.max,
+      guests: [...t.querySelectorAll(".guest-list li:not(.drag-placeholder)")]
+        .map(li => li.dataset.name)
+    })),
+    unassigned: [...unassigned.querySelectorAll("li:not(.drag-placeholder)")]
+      .map(li => li.dataset.name)
+  };
+  localStorage.setItem("wedding_state", JSON.stringify(state));
+}
 
 document.getElementById("save-btn").onclick = () => {
   saveState();
@@ -1053,343 +991,92 @@ document.getElementById("clear-btn").onclick = () => {
     location.reload();
   }
 };
-
-function saveState() {
-  const state = {
-    androidMode, // ✅ LƯU ANDROID TOGGLE
-    tables: [...document.querySelectorAll(".table")].map(t => ({
-      name: t.dataset.baseName,
-      max: t.dataset.max,
-      guests: [...t.querySelectorAll(".guest-list li:not(.drag-placeholder)")]
-        .map(li => li.dataset.name)
-    })),
-    unassigned: [...unassigned.querySelectorAll("li:not(.drag-placeholder)")]
-      .map(li => li.dataset.name)
-  };
-
-  localStorage.setItem("wedding_state", JSON.stringify(state));
-}
-
-/* Load dữ liệu khi mở trang */
-(function load() {
-  const raw = localStorage.getItem("wedding_state");
-  if (!raw) {
-    createTable("Bàn 1");
-    updateSummary();
-    return;
-  }
-
-  let s;
-  try {
-    s = JSON.parse(raw);
-  } catch (e) {
-    console.error("Lỗi parse state, reset dữ liệu", e);
-    localStorage.removeItem("wedding_state");
-    createTable("Bàn 1");
-    updateSummary();
-    return;
-  }
-
-  /* ✅ KHÔI PHỤC ANDROID TOGGLE */
-  if (s.androidMode) {
-    const toggle = document.getElementById("android-mode-toggle");
-    if (toggle) {
-      toggle.checked = true;
-      toggle.dispatchEvent(new Event("change"));
-    }
-  }
-
-  if (!s.tables || !Array.isArray(s.tables)) {
-    createTable("Bàn 1");
-    updateSummary();
-    return;
-  }
-
-  s.tables.forEach(t => createTable(t.name, t.max, t.guests || []));
-  (s.unassigned || []).forEach(n => unassigned.appendChild(createGuestLi(n)));
-
-  document.querySelectorAll(".table").forEach(updateTable);
-  updateUnassignedView();
-})();
-
+</script>
+<script>
 /* =======================
-   IMPORT CSV
+   THÊM KHÁCH NHANH
    ======================= */
 
-document.getElementById("import-btn").onclick = () => {
-  document.getElementById("import-csv").click();
-};
+document.getElementById("add-guest").onclick = () => {
+  const lines = guestInput.value.split("\n").map(normalizeName).filter(Boolean);
+  if (!lines.length) return;
 
-document.getElementById("import-csv").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = () => parseCSV(reader.result);
-  reader.readAsText(file, "utf-8");
-
-  e.target.value = "";
-});
-
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return alert("CSV không hợp lệ");
-
-  const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-  const idxName = headers.indexOf("tên khách");
-  const idxTable = headers.indexOf("bàn");
-
-  if (idxName === -1) return alert("CSV phải có cột 'Tên khách'");
-
-  lines.slice(1).forEach(line => {
-    const cols = line.split(",").map(c => stripQuotes(c));
-    const name = normalizeName(cols[idxName]);
-    if (!name) return;
-
-    if (idxTable !== -1 && cols[idxTable]) {
-      const tableName = normalizeName(stripQuotes(cols[idxTable]));
-      let table = [...document.querySelectorAll(".table")]
-        .find(t => t.dataset.baseName === tableName);
-
-      if (!table) {
-        createTable(tableName);
-        table = [...document.querySelectorAll(".table")]
-          .find(t => t.dataset.baseName === tableName);
-      }
-
-      table.querySelector(".guest-list").appendChild(createGuestLi(name));
-      updateTable(table);
-    } else {
-      unassigned.appendChild(createGuestLi(name));
-    }
+  lines.forEach(name => {
+    unassigned.appendChild(createGuestLi(name));
   });
 
-  saveState();
-  updateSummary();
+  guestInput.value = "";
   updateUnassignedView();
-}
+  updateSummary();
+  saveState();
+};
 
 /* =======================
-   EXPORT MENU
+   QUICK ADD TRONG BÀN
    ======================= */
-
-exportBtn.onclick = () => {
-  exportMenu.style.display =
-    exportMenu.style.display === "flex" ? "none" : "flex";
-};
 
 document.addEventListener("click", e => {
-  if (
-    !exportMenu.contains(e.target) &&
-    e.target !== exportBtn &&
-    e.target.id !== "help-btn" && !e.target.closest(".modal")
-  ) {
-    exportMenu.style.display = "none";
-  }
+  if (!e.target.classList.contains("quick-add-btn")) return;
+  const table = e.target.closest(".table");
+  const box = table.querySelector(".quick-add");
+  const input = box.querySelector(".quick-add-input");
+
+  box.classList.toggle("hidden");
+  input.value = "";
+  input.focus();
+
+  input.onkeydown = ev => {
+    if (ev.key === "Enter") {
+      const name = normalizeName(input.value);
+      if (!name) return;
+      table.querySelector(".guest-list").appendChild(createGuestLi(name));
+      box.classList.add("hidden");
+      updateTable(table);
+      saveState();
+    }
+    if (ev.key === "Escape") box.classList.add("hidden");
+  };
 });
-  
-/* =======================
-   MỞ MODAL PDF 1 BÀN
-   ======================= */
-
-document.getElementById("export-pdf-one").onclick = () => {
-  exportMenu.style.display = "none";
-
-  pdfTableSelect.innerHTML = "";
-  document.querySelectorAll(".table").forEach((t, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = t.dataset.baseName;
-    pdfTableSelect.appendChild(opt);
-  });
-
-  pdfOneModal.style.display = "flex";
-};
 
 /* =======================
-   ĐÓNG MODAL PDF 1 BÀN
+   MOVE MODAL (ANDROID)
    ======================= */
 
-document.getElementById("pdf-one-cancel").onclick = () => {
-  pdfOneModal.style.display = "none";
-};
+function openMoveModal(li) {
+  const modal = document.getElementById("move-modal");
+  const list = document.getElementById("move-list");
+  list.innerHTML = "";
 
-
-
-/* =======================
-   EXPORT CSV
-   ======================= */
-
-document.getElementById("export-csv").onclick = () => {
-  exportMenu.style.display = "none";
-
-  let rows = [["Tên khách", "Bàn"]];
   document.querySelectorAll(".table").forEach(t => {
-    const tableName = t.dataset.baseName;
-    t.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => {
-      rows.push([li.dataset.name, tableName]);
-    });
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.textContent = t.dataset.baseName;
+    btn.onclick = () => {
+      t.querySelector(".guest-list").appendChild(li);
+      closeMoveModal();
+      updateTable(t);
+      saveState();
+    };
+    list.appendChild(btn);
   });
 
-  unassigned.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
-    rows.push([li.dataset.name, ""]);
-  });
+  const unBtn = document.createElement("button");
+  unBtn.className = "btn";
+  unBtn.textContent = "Chưa sắp xếp";
+  unBtn.onclick = () => {
+    unassigned.appendChild(li);
+    closeMoveModal();
+    updateUnassignedView();
+    saveState();
+  };
+  list.appendChild(unBtn);
 
-  const csv = rows.map(r => r.join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "danhsach.csv";
-  a.click();
-};
+  modal.style.display = "flex";
+}
 
-/* =======================
-   EXPORT PDF TẤT CẢ — MẪU C2
-   ======================= */
-
-document.getElementById("export-pdf-all").onclick = () => {
-  exportMenu.style.display = "none";
-
-  // Tạo cửa sổ mới
-  const w = window.open("", "_blank");
-
-  // CSS sang trọng
-  const css = `
-    <style>
-      body {
-        font-family: "Times New Roman", serif;
-        margin: 0;
-        padding: 0;
-      }
-      .page {
-        width: 100%;
-        padding: 40px 30px;
-        box-sizing: border-box;
-        page-break-after: always;
-        border: 2px solid #000;
-        margin: 20px auto;
-      }
-      h1 {
-        text-align: center;
-        font-size: 32px;
-        margin: 0 0 20px 0;
-        letter-spacing: 1px;
-      }
-      ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        font-size: 20px;
-        line-height: 1.6;
-      }
-      ul li::before {
-        content: "• ";
-        font-size: 24px;
-      }
-    </style>
-  `;
-
-  // Bắt đầu HTML
-  w.document.write("<html><head>" + css + "</head><body>");
-
-  // 1) Trang "Chưa sắp xếp"
-  w.document.write(`<div class="page"><h1>CHƯA SẮP XẾP</h1><ul>`);
-  [...unassigned.querySelectorAll("li:not(.drag-placeholder)")].forEach(li => {
-    w.document.write(`<li>${li.dataset.name}</li>`);
-  });
-  w.document.write("</ul></div>");
-
-  // 2) Mỗi bàn = 1 trang
-  document.querySelectorAll(".table").forEach(t => {
-    const name = t.dataset.baseName;
-    w.document.write(`<div class="page"><h1>${name}</h1><ul>`);
-
-    [...t.querySelectorAll(".guest-list li:not(.drag-placeholder)")].forEach(li => {
-      w.document.write(`<li>${li.dataset.name}</li>`);
-    });
-
-    w.document.write("</ul></div>");
-  });
-
-  // Kết thúc
-  w.document.write("</body></html>");
-  w.document.close();
-
-  // In
-  w.print();
-};
-
-/* =======================
-   EXPORT PDF 1 BÀN — MẪU C2
-   ======================= */
-
-document.getElementById("pdf-one-export").onclick = () => {
-  const index = pdfTableSelect.value;
-  const table = document.querySelectorAll(".table")[index];
-
-  const w = window.open("", "_blank");
-
-  const css = `
-    <style>
-      body {
-        font-family: "Times New Roman", serif;
-        margin: 0;
-        padding: 0;
-      }
-      .page {
-        width: 100%;
-        padding: 40px 30px;
-        box-sizing: border-box;
-        page-break-after: always;
-        border: 2px solid #000;
-        margin: 20px auto;
-      }
-      h1 {
-        text-align: center;
-        font-size: 32px;
-        margin: 0 0 20px 0;
-        letter-spacing: 1px;
-      }
-      ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        font-size: 20px;
-        line-height: 1.6;
-      }
-      ul li::before {
-        content: "• ";
-        font-size: 24px;
-      }
-    </style>
-  `;
-
-  w.document.write("<html><head>" + css + "</head><body>");
-
-  w.document.write(`<div class="page"><h1>${table.dataset.baseName}</h1><ul>`);
-
-  [...table.querySelectorAll(".guest-list li:not(.drag-placeholder)")].forEach(li => {
-    w.document.write(`<li>${li.dataset.name}</li>`);
-  });
-
-  w.document.write("</ul></div></body></html>");
-  w.document.close();
-
-  w.print();
-  pdfOneModal.style.display = "none";
-};
-
-
-/* =======================
-   THÊM BÀN
-   ======================= */
-
-document.getElementById("add-table").onclick = () => {
-  const count = document.querySelectorAll(".table").length + 1;
-  createTable("Bàn " + count);
-  updateSummary();
-  saveState();
-};
+function closeMoveModal() {
+  document.getElementById("move-modal").style.display = "none";
+}
 
 /* =======================
    CHỈNH MAX
@@ -1397,187 +1084,123 @@ document.getElementById("add-table").onclick = () => {
 
 document.getElementById("adjust-max").onclick = () => {
   maxList.innerHTML = "";
-
-  document.querySelectorAll(".table").forEach((t, i) => {
+  document.querySelectorAll(".table").forEach(t => {
     const row = document.createElement("div");
-    row.className = "max-row";
-    row.style.marginBottom = "8px";
-
-    const name = t.dataset.baseName || ("Bàn " + (i + 1));
-    const currentMax = t.dataset.max || "10";
-
     row.innerHTML = `
-      <div style="margin-bottom:4px;font-weight:600">${name}</div>
-      <input type="number" class="max-input" data-index="${i}" value="${currentMax}"
-        style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc">
+      <label>${t.dataset.baseName}</label>
+      <input type="number" min="1" value="${t.dataset.max}">
     `;
+    row.querySelector("input").onchange = e => {
+      t.dataset.max = e.target.value;
+      updateTable(t);
+    };
     maxList.appendChild(row);
   });
-
   maxModal.style.display = "flex";
+};
+
+document.getElementById("max-save").onclick = () => {
+  document.querySelectorAll(".table").forEach(updateTable);
+  saveState();
+  maxModal.style.display = "none";
 };
 
 document.getElementById("max-cancel").onclick = () => {
   maxModal.style.display = "none";
 };
 
-document.getElementById("max-save").onclick = () => {
-  const inputs = maxList.querySelectorAll(".max-input");
-  const tables = document.querySelectorAll(".table");
-
-  inputs.forEach(inp => {
-    const idx = parseInt(inp.dataset.index, 10);
-    const val = parseInt(inp.value || "0", 10);
-    if (!val || val <= 0) return;
-
-    const table = tables[idx];
-    if (!table) return;
-
-    table.dataset.max = String(val);
-    updateTable(table);
-  });
-
-  const bulk = document.getElementById("bulk-max");
-  if (bulk && bulk.value) {
-    const v = parseInt(bulk.value, 10);
-    if (v > 0) {
-      document.querySelectorAll(".table").forEach(t => {
-        t.dataset.max = String(v);
-        updateTable(t);
-      });
-    }
-  }
-
-  saveState();
-  maxModal.style.display = "none";
-};
-
 /* =======================
-   MOVE KHÁCH (MŨI TÊN ANDROID)
+   IMPORT CSV
    ======================= */
 
-function openMoveGuestModal(li){
-  const box = document.getElementById("move-list");
-  box.innerHTML = "";
+document.getElementById("import-btn").onclick = () =>
+  document.getElementById("import-csv").click();
 
-  document.querySelectorAll(".table").forEach((t, i) => {
-    const btn = document.createElement("button");
-    btn.textContent = t.dataset.baseName;
-    btn.className = "btn";
-    btn.style.width = "100%";
-    btn.onclick = () => {
-      t.querySelector(".guest-list").appendChild(li);
-      clearSelectedGuest();
-      document.getElementById("move-modal").style.display = "none";
-      document.querySelectorAll(".table").forEach(updateTable);
-      saveState();
-      updateUnassignedView();
-    };
-    box.appendChild(btn);
-  });
+document.getElementById("import-csv").onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-  document.getElementById("move-modal").style.display = "flex";
-}
-
-document.getElementById("move-cancel").onclick = () => {
-  document.getElementById("move-modal").style.display = "none";
-};
-
-/* =======================
-   ĐỔI TÊN BÀN + XÓA BÀN + AUTO FIX
-   ======================= */
-
-tablesEl.addEventListener("click", e => {
-  const table = e.target.closest(".table");
-  if (!table) return;
-
-  /* Xóa bàn */
-if (e.target.classList.contains("delete-table-btn")) {
-  if (confirm("Xóa bàn này?")) {
-
-    // 1) Lấy toàn bộ khách trong bàn
-    const guests = [...table.querySelectorAll(".guest-list li:not(.drag-placeholder)")];
-
-    // 2) Đưa từng khách về "Chưa sắp xếp"
-    guests.forEach(li => {
-      unassigned.appendChild(li);
+  const reader = new FileReader();
+  reader.onload = () => {
+    reader.result.split(/\r?\n/).forEach(line => {
+      const name = stripQuotes(line);
+      if (name) unassigned.appendChild(createGuestLi(name));
     });
-
-    // 3) Cập nhật giao diện
-    updateUnassignedView();
-
-    // 4) Xóa bàn
-    table.remove();
-
-    // 5) Cập nhật tổng & lưu
-    updateSummary();
-    saveState();
-  }
-}
-
-
-  /* Đổi tên bàn */
-  if (e.target.classList.contains("edit-table-btn")) {
-    const newName = prompt("Tên bàn:", table.dataset.baseName);
-    if (newName) {
-      table.dataset.baseName = normalizeName(newName);
-      updateTable(table);
-      saveState();
-    }
-  }
-
-  /* Quick add */
-  if (e.target.classList.contains("quick-add-btn")) {
-    const box = table.querySelector(".quick-add");
-    box.classList.toggle("hidden");
-    const input = box.querySelector(".quick-add-input");
-    input.focus();
-
-    input.onkeydown = ev => {
-      if (ev.key === "Enter") {
-        const name = normalizeName(input.value);
-        if (name) {
-          table.querySelector(".guest-list").appendChild(createGuestLi(name));
-          updateTable(table);
-          saveState();
-        }
-        input.value = "";
-        box.classList.add("hidden");
-      }
-      if (ev.key === "Escape") {
-        box.classList.add("hidden");
-      }
-    };
-  }
-
-  /* Auto fix */
-  if (e.target.classList.contains("auto-fix-btn")) {
-    const list = table.querySelector(".guest-list");
-    const max = parseInt(table.dataset.max, 10);
-    const items = [...list.querySelectorAll("li:not(.drag-placeholder)")];
-
-    while (items.length > max) {
-      unassigned.appendChild(items.pop());
-    }
-
-    updateTable(table);
     updateUnassignedView();
     saveState();
-  }
-});
+  };
+  reader.readAsText(file);
+};
+
 /* =======================
-   HƯỚNG DẪN
+   EXPORT CSV
    ======================= */
 
-document.getElementById("help-btn").onclick = () => {
-  document.getElementById("help-modal").style.display = "flex";
+document.getElementById("export-csv").onclick = () => {
+  let rows = [];
+  document.querySelectorAll(".table").forEach(t => {
+    t.querySelectorAll(".guest-list li").forEach(li => {
+      rows.push(`"${t.dataset.baseName}","${li.dataset.name}"`);
+    });
+  });
+  unassigned.querySelectorAll("li").forEach(li => {
+    rows.push(`"Chưa sắp xếp","${li.dataset.name}"`);
+  });
+
+  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ban-tiec.csv";
+  a.click();
 };
 
-document.getElementById("help-close").onclick = () => {
-  document.getElementById("help-modal").style.display = "none";
+/* =======================
+   EXPORT PDF
+   ======================= */
+
+document.getElementById("export-pdf-all").onclick = () => {
+  printRoot.innerHTML = tablesEl.innerHTML;
+  printRoot.style.display = "block";
+  window.print();
+  printRoot.style.display = "none";
 };
 
+document.getElementById("export-pdf-one").onclick = () => {
+  pdfTableSelect.innerHTML = "";
+  document.querySelectorAll(".table").forEach((t, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = t.dataset.baseName;
+    pdfTableSelect.appendChild(opt);
+  });
+  pdfOneModal.style.display = "flex";
+};
+
+document.getElementById("pdf-one-export").onclick = () => {
+  const idx = pdfTableSelect.value;
+  printRoot.innerHTML = document.querySelectorAll(".table")[idx].outerHTML;
+  printRoot.style.display = "block";
+  window.print();
+  printRoot.style.display = "none";
+  pdfOneModal.style.display = "none";
+};
+
+document.getElementById("pdf-one-cancel").onclick = () =>
+  pdfOneModal.style.display = "none";
+
+/* =======================
+   EXPORT MENU
+   ======================= */
+
+exportBtn.onclick = () =>
+  exportMenu.style.display =
+    exportMenu.style.display === "flex" ? "none" : "flex";
+
+document.addEventListener("click", e => {
+  if (!exportBtn.contains(e.target)) exportMenu.style.display = "none";
+});
 </script>
+
 
 </body>
 </html>
