@@ -564,9 +564,82 @@ function stripQuotes(s){
 function guestNameFromLi(li){
   return li.dataset.name || normalizeName(li.textContent);
 }
+  
+/* =======================
+   ANDROID — MỞ MODAL DI CHUYỂN KHÁCH
+   ======================= */
+
+function openMoveModal(li) {
+  const moveModal = document.getElementById("move-modal");
+  const moveList = document.getElementById("move-list");
+
+  const fullName = guestNameFromLi(li);
+
+  moveList.innerHTML = "";
+
+  const title = document.createElement("div");
+  title.style.fontWeight = "bold";
+  title.style.marginBottom = "8px";
+  title.textContent = `Đưa tên ${fullName} vào:`;
+  moveList.appendChild(title);
+
+  // ===== DANH SÁCH BÀN =====
+  document.querySelectorAll(".table").forEach(t => {
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.textContent = t.dataset.baseName;
+
+    btn.onclick = () => {
+      t.querySelector(".guest-list").appendChild(li);
+
+      li.dataset.name = fullName;
+      li.querySelector(".guest-name").textContent = fullName;
+
+      closeMoveModal();
+      updateTable(t);
+      updateSummary();
+      saveState();
+    };
+
+    moveList.appendChild(btn);
+  });
+
+  // ===== CHƯA SẮP XẾP =====
+  const unBtn = document.createElement("button");
+  unBtn.className = "btn";
+  unBtn.textContent = "Chưa sắp xếp";
+
+  unBtn.onclick = () => {
+    unassigned.appendChild(li);
+
+    // ✅ DÙNG LẠI HÀM CŨ shortName(full)
+    const short = shortName(fullName);
+    li.dataset.name = short;
+    li.querySelector(".guest-name").textContent = short;
+
+    closeMoveModal();
+    updateUnassignedView();
+    updateSummary();
+    saveState();
+  };
+
+  moveList.appendChild(unBtn);
+
+  moveModal.style.display = "flex";
+}
+  
+/* =======================
+   ANDROID — ĐÓNG MODAL DI CHUYỂN
+   ======================= */
+
+function closeMoveModal() {
+  const moveModal = document.getElementById("move-modal");
+  moveModal.style.display = "none";
+  selectedGuest = null;
+}
 
 /* =======================
-   TẠO 1 KHÁCH <li> — BẢN FIX
+   TẠO 1 KHÁCH <li> — ANDROID MOVE MODAL
    ======================= */
 
 function createGuestLi(name){
@@ -591,13 +664,22 @@ function createGuestLi(name){
     arrow.className = "move-arrow";
     arrow.textContent = "➡️";
     li.appendChild(arrow);
+
+    span.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (editNamesMode) return;
+      openMoveModal(li);
+    };
   }
 
   return li;
 }
 
+document.getElementById("move-cancel").onclick = closeMoveModal;
+
 /* =======================
-   RÚT GỌN TÊN
+   RÚT GỌN TÊN (HÀM CŨ)
    ======================= */
 
 function shortName(full){
