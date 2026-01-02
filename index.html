@@ -967,7 +967,6 @@ document.addEventListener("click", e => {
 
 function saveState() {
   const state = {
-    androidMode,
     tables: [...document.querySelectorAll(".table")].map(t => ({
       name: t.dataset.baseName,
       max: t.dataset.max,
@@ -977,13 +976,43 @@ function saveState() {
     unassigned: [...unassigned.querySelectorAll("li:not(.drag-placeholder)")]
       .map(li => li.dataset.name)
   };
+
   localStorage.setItem("wedding_state", JSON.stringify(state));
 }
 
-document.getElementById("save-btn").onclick = () => {
-  saveState();
-  alert("Đã lưu!");
-};
+/* Load dữ liệu khi mở trang */
+(function load() {
+  const raw = localStorage.getItem("wedding_state");
+  if (!raw) {
+    createTable("Bàn 1");
+    updateSummary();
+    return;
+  }
+
+  let s;
+  try {
+    s = JSON.parse(raw);
+  } catch (e) {
+    console.error("Lỗi parse state, reset dữ liệu", e);
+    localStorage.removeItem("wedding_state");
+    createTable("Bàn 1");
+    updateSummary();
+    return;
+  }
+
+  if (!s.tables || !Array.isArray(s.tables)) {
+    createTable("Bàn 1");
+    updateSummary();
+    return;
+  }
+
+  s.tables.forEach(t => createTable(t.name, t.max, t.guests || []));
+  (s.unassigned || []).forEach(n => unassigned.appendChild(createGuestLi(n)));
+
+  document.querySelectorAll(".table").forEach(updateTable);
+  updateUnassignedView();
+})();
+
 
 document.getElementById("clear-btn").onclick = () => {
   if (confirm("Xóa toàn bộ dữ liệu?")) {
@@ -1113,44 +1142,82 @@ document.getElementById("max-cancel").onclick = () => {
    IMPORT CSV
    ======================= */
 
-document.getElementById("import-btn").onclick = () =>
+document.getElementById("import-btn").onclick = () => {
   document.getElementById("import-csv").click();
+};
 
-document.getElementById("import-csv").onchange = e => {
+document.getElementById("import-csv").addEventListener("change", e => {
   const file = e.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = () => {
-    reader.result.split(/\r?\n/).forEach(line => {
-      const name = stripQuotes(line);
-      if (name) unassigned.appendChild(createGuestLi(name));
-    });
-    updateUnassignedView();
-    saveState();
-  };
-  reader.readAsText(file);
-};
+  reader.onload = () => parseCSV(reader.result);
+  reader.readAsText(file, "utf-8");
 
+  e.target.value = "";
+});
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return alert("CSV không hợp lệ");
+
+  const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+  const idxName = headers.indexOf("tên khách");
+  const idxTable = headers.indexOf("bàn");
+
+  if (idxName === -1) return alert("CSV phải có cột 'Tên khách'");
+
+  lines.slice(1).forEach(line => {
+    const cols = line.split(",").map(c => stripQuotes(c));
+    const name = normalizeName(cols[idxName]);
+    if (!name) return;
+
+    if (idxTable !== -1 && cols[idxTable]) {
+      const tableName = normalizeName(stripQuotes(cols[idxTable]));
+      let table = [...document.querySelectorAll(".table")]
+        .find(t => t.dataset.baseName === tableName);
+
+      if (!table) {
+        createTable(tableName);
+        table = [...document.querySelectorAll(".table")]
+          .find(t => t.dataset.baseName === tableName);
+      }
+
+      table.querySelector(".guest-list").appendChild(createGuestLi(name));
+      updateTable(table);
+    } else {
+      unassigned.appendChild(createGuestLi(name));
+    }
+  });
+
+  saveState();
+  updateSummary();
+  updateUnassignedView();
+}
 /* =======================
    EXPORT CSV
    ======================= */
 
 document.getElementById("export-csv").onclick = () => {
-  let rows = [];
+  exportMenu.style.display = "none";
+
+  let rows = [["Tên khách", "Bàn"]];
   document.querySelectorAll(".table").forEach(t => {
-    t.querySelectorAll(".guest-list li").forEach(li => {
-      rows.push(`"${t.dataset.baseName}","${li.dataset.name}"`);
+    const tableName = t.dataset.baseName;
+    t.querySelectorAll(".guest-list li:not(.drag-placeholder)").forEach(li => {
+      rows.push([li.dataset.name, tableName]);
     });
   });
-  unassigned.querySelectorAll("li").forEach(li => {
-    rows.push(`"Chưa sắp xếp","${li.dataset.name}"`);
+
+  unassigned.querySelectorAll("li:not(.drag-placeholder)").forEach(li => {
+    rows.push([li.dataset.name, ""]);
   });
 
-  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "ban-tiec.csv";
+  a.download = "danhsach.csv";
   a.click();
 };
 
