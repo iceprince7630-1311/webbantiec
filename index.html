@@ -665,12 +665,15 @@ function createGuestLi(name){
     arrow.textContent = "➡️";
     li.appendChild(arrow);
 
-    span.onclick = (e) => {
+    span.addEventListener("touchstart", (e) => {
       e.preventDefault();
       e.stopPropagation();
+
       if (editNamesMode) return;
+
       openMoveModal(li);
-    };
+    }, { passive: false });
+
   }
 
   return li;
