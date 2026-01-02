@@ -617,7 +617,7 @@ function closeMoveModal() {
 }
 
 /* =======================
-   TẠO 1 KHÁCH <li> — ANDROID MOVE MODAL (FINAL)
+   TẠO 1 KHÁCH <li> — FINAL FIX
    ======================= */
 
 function createGuestLi(name){
@@ -631,31 +631,25 @@ function createGuestLi(name){
   li.appendChild(span);
 
   // Desktop: cho drag
-  li.draggable = !isAndroid;
+  li.draggable = !isTouch;
 
-  if (isAndroid) {
-    li.style.userSelect = "none";
-    li.style.webkitUserSelect = "none";
-    li.style.webkitUserDrag = "none";
-    li.style.touchAction = "none"; // chặn gesture/drag mặc định
+  // ===== LUÔN TẠO MŨI TÊN =====
+  const arrow = document.createElement("span");
+  arrow.className = "move-arrow";
+  arrow.textContent = "➡️";
+  li.appendChild(arrow);
 
-    // ===== MŨI TÊN DI CHUYỂN =====
-    const arrow = document.createElement("span");
-    arrow.className = "move-arrow";
-    arrow.textContent = "➡️";
-    li.appendChild(arrow);
-
-    // CHỈ click mũi tên mới mở modal
-    arrow.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (editNamesMode) return;
-      openMoveModal(li);
-    });
-  }
+  // Click mũi tên → mở modal
+  arrow.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (editNamesMode) return;
+    openMoveModal(li);
+  });
 
   return li;
 }
+
 
 // Nút hủy modal
 document.getElementById("move-cancel").onclick = closeMoveModal;
