@@ -572,10 +572,9 @@ let selectedGuest = null;
 
 let androidMode = false;
 
-document.addEventListener("DOMContentLoaded", () => {
-  const androidToggle = document.getElementById("android-mode-toggle");
-  if (!androidToggle) return;
+const androidToggle = document.getElementById("android-mode-toggle");
 
+if (androidToggle) {
   androidToggle.addEventListener("change", () => {
     androidMode = androidToggle.checked;
     document.body.classList.toggle("android-mode", androidMode);
@@ -584,8 +583,7 @@ document.addEventListener("DOMContentLoaded", () => {
       li.draggable = !androidMode;
     });
   });
-});
-
+}
 
 /* =======================
    HELPER
