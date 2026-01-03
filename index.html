@@ -1208,7 +1208,7 @@ const deleteCancelBtn  = qs("#delete-cancel-btn");
 
 deleteBtn.onclick = () => {
   deleteMode = true;
-  clearSelectedGuest();
+  // clearSelectedGuest();   // ❌ BỎ DÒNG NÀY
   document.body.classList.add("delete-mode");
 
   deleteBtn.classList.add("hidden");
@@ -1267,7 +1267,7 @@ const toolbarBlocker = qs("#toolbar-blocker");
 
 editBtn.onclick = () => {
   editNamesMode = true;
-  clearSelectedGuest();
+  // clearSelectedGuest();   // ❌ BỎ DÒNG NÀY
   document.body.classList.add("edit-names-mode");
   toolbarBlocker.style.pointerEvents = "auto";
 
