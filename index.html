@@ -242,15 +242,13 @@ body {
   margin-right: 6px;
   color: #555;
   font-weight: bold;
+  display: inline-flex; /* ⭐ DÒNG QUAN TRỌNG NHẤT */
 }
 
 .guest-name {
   flex: 1;
 }
     
-#unassigned li {
-  min-width: 0;
-}
 
 /* =====================================================
    6. SIDEBAR
@@ -342,36 +340,6 @@ body {
 }
 
 
-/* Responsive: khi màn hình hẹp, chia layout khách thành 2 hàng */
-@media (max-width: 480px) {
-  #unassigned li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-  }
-
-  /* Hàng 1: STT + move + delete */
-  #unassigned li::before {
-    order: 1;
-  }
-
-  #unassigned li .move-btn {
-    order: 2;
-  }
-
-  #unassigned li .delete-x {
-    order: 3;
-  }
-
-  /* Hàng 2: tên khách */
-  #unassigned li .guest-name {
-    order: 4;
-    width: 100%;
-    margin-top: 4px;
-    white-space: normal;
-  }
-}
 
 
 /* =====================================================
@@ -672,6 +640,81 @@ body.edit-names-mode .selected-guest {
   border-radius: 8px;
   border: 1px solid #ccc;
   margin-bottom: 10px;
+}
+
+/* =====================================================
+   GUEST ITEM — CHƯA SẮP XẾP (RESPONSIVE FIX)
+   ===================================================== */
+
+/* Mỗi khách là flex item */
+#unassigned li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  min-width: 0;
+  position: relative;
+}
+
+/* Số thứ tự bằng ::before */
+#unassigned li::before {
+  content: attr(data-index) ".";
+  font-weight: bold;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+/* Tên khách co lại đúng */
+#unassigned .guest-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Move và delete là nút nhỏ */
+#unassigned .move-btn,
+#unassigned .delete-x {
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+
+/* ===== Khi màn hình hẹp: chia 2 hàng ===== */
+@media (max-width: 480px) {
+  #unassigned li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  /* Hàng 1: số thứ tự (CSS counter), move, delete */
+  #unassigned li::before {
+    order: 1;
+    flex-shrink: 0;
+  }
+
+  #unassigned li .move-btn {
+    order: 2;
+  }
+
+  #unassigned li .delete-x {
+    order: 3;
+  }
+
+  /* Hàng 2: tên khách */
+  #unassigned li .guest-name {
+    order: 4;
+    width: 100%;
+    margin-top: 4px;
+    white-space: normal;
+    word-break: break-word;
+  }
 }
 
 
