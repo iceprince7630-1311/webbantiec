@@ -1748,14 +1748,18 @@ qs("#add-guest").onclick = () => {
 };
 
 /* =====================================================
-   ANDROID MODE TOGGLE (PHASE 2 + PHASE 4.1)
+   ANDROID MODE TOGGLE (PHASE 2 + PHASE 4.1 + LOG TEST)
    ===================================================== */
 
 if (isAndroid) {
+  console.log("[ANDROID] Detected Android device");
   document.body.classList.add("android");
 
   const toggle = document.getElementById("android-toggle");
   const buttons = toggle.querySelectorAll("button");
+
+  console.log("[ANDROID] Toggle element:", toggle);
+  console.log("[ANDROID] Buttons found:", buttons.length);
 
   // Khôi phục trạng thái từ Phase 1
   buttons.forEach(btn => {
@@ -1766,26 +1770,48 @@ if (isAndroid) {
     }
   });
 
+  console.log("[ANDROID] Initial mode:", androidInteractionMode);
+
   // Gắn sự kiện toggle
   buttons.forEach(btn => {
-    btn.onclick = () => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+
       const mode = btn.dataset.mode;
 
+      console.log("====================================");
+      console.log("[TOGGLE CLICKED]");
+      console.log("Button:", mode);
+      console.log("Old mode:", androidInteractionMode);
+
+      // Đổi mode
       androidInteractionMode = mode;
+      console.log("New mode:", androidInteractionMode);
+
+      // Lưu state
+      console.log("[SAVE] Calling saveState()");
       saveState();
+
+      // Áp dụng mode
+      console.log("[APPLY] Calling applyAndroidMode()");
       applyAndroidMode();
 
       // Cập nhật nút active
       buttons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
+      console.log("[UI] Active button updated");
 
       // 🔔 PHASE 4.1 — TOAST HINT
       if (mode === "tap") {
+        console.log("[TOAST] Showing TAP hint");
         showToast("Chạm khách → chạm bàn để chuyển");
       } else {
+        console.log("[TOAST] Showing DRAG hint");
         showToast("Giữ và kéo để di chuyển khách");
       }
-    };
+
+      console.log("====================================");
+    });
   });
 }
 
