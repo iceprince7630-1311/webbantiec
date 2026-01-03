@@ -535,7 +535,11 @@ li.selected-guest .move-arrow {
   pointer-events: none;
 }
 
-/* Khi đang sửa tên khách */
+/* =====================================================
+   EDIT NAME MODE — UI LOCKDOWN
+   ===================================================== */
+
+/* Khi đang sửa tên khách: toàn bộ nút bị mờ + vô hiệu */
 .edit-names-mode .btn {
   opacity: 0.3;
   pointer-events: none;
@@ -548,17 +552,47 @@ li.selected-guest .move-arrow {
   pointer-events: auto;
 }
 
+/* Nút Sửa tên khách bị ẩn bằng JS, nhưng nếu hiện thì vẫn sáng */
+.edit-names-mode #edit-names-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Làm mờ nút Thêm bàn (+) */
+.edit-names-mode #add-table {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Làm mờ toàn bộ nút trong table-actions (sửa tên bàn, xóa bàn, quick-add) */
+.edit-names-mode .table-actions .btn {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Làm mờ nút + thêm khách trong từng bàn */
+.edit-names-mode .quick-add-btn {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Làm mờ input quick-add nếu đang mở */
+.edit-names-mode .quick-add-input {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 /* Move-btn mờ trong edit mode */
 .edit-names-mode .move-btn {
   opacity: 0.25;
   pointer-events: none;
 }
 
-/* Table actions cũng mờ */
-.edit-names-mode .table-actions .btn {
-  opacity: 0.3;
-  pointer-events: none;
+/* Xóa chế độ chọn khách (nếu có) */
+.edit-names-mode .selected-guest {
+  background: none !important;
 }
+
 
   </style>
   
