@@ -345,22 +345,34 @@ body {
 /* Responsive: khi màn hình hẹp, chia layout khách thành 2 hàng */
 @media (max-width: 480px) {
   #unassigned li {
+    display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: center;
+    gap: 6px;
   }
 
-  #unassigned li::before,
-  #unassigned li .move-btn {
+  /* Hàng 1: STT + move + delete */
+  #unassigned li::before {
     order: 1;
   }
 
-  #unassigned li .guest-name {
+  #unassigned li .move-btn {
     order: 2;
+  }
+
+  #unassigned li .delete-x {
+    order: 3;
+  }
+
+  /* Hàng 2: tên khách */
+  #unassigned li .guest-name {
+    order: 4;
     width: 100%;
     margin-top: 4px;
     white-space: normal;
   }
 }
+
 
 /* =====================================================
    7. MODES & DRAG UI
