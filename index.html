@@ -801,16 +801,32 @@ function qsa(selector, root = document) {
    và được gọi sau khi loadState() hoặc khi user đổi mode
    ===================================================== */
 function applyInteractionMode() {
-  if (interactionMode === "tap") {
-    // Bật giao diện tap mode
-    document.body.classList.add("tap-mode");
-    document.body.classList.remove("drag-mode");
-  } else {
-    // Bật giao diện drag mode
-    document.body.classList.add("drag-mode");
-    document.body.classList.remove("tap-mode");
+  // Drag mode: bật draggable
+  if (interactionMode === "drag") {
+    qsa(".guest-list li").forEach(li => {
+      li.draggable = true;
+    });
   }
+
+  // Tap mode: tắt draggable
+  if (interactionMode === "tap") {
+    qsa(".guest-list li").forEach(li => {
+      li.draggable = false;
+    });
+  }
+
+  /* =====================================================
+     V5.1 — Show/hide Move icon
+     ===================================================== */
+  qsa(".move-btn").forEach(btn => {
+    if (interactionMode === "tap") {
+      btn.style.display = "inline-block";   // Tap Mode → hiện icon Move
+    } else {
+      btn.style.display = "none";           // Drag Mode → ẩn icon Move
+    }
+  });
 }
+
 
 </script>
 
