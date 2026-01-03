@@ -1744,7 +1744,7 @@ if (toggle) {
 }
 
 /* =====================================================
-   V5.1 — TAP MODE LOGIC (ONE LISTENER VERSION)
+   V5.1 — TAP MODE LOGIC (FIXED VERSION)
    ===================================================== */
 
 let selectedGuest = null;
@@ -1753,8 +1753,12 @@ document.addEventListener("click", e => {
   // Chỉ chạy khi đang ở Tap Mode
   if (interactionMode !== "tap") return;
 
+  // Chỉ xử lý click trong khu vực bàn hoặc khách
   const li = e.target.closest("li");
   const table = e.target.closest(".table");
+
+  // Nếu click KHÔNG nằm trong table hoặc li → bỏ qua hoàn toàn
+  if (!li && !table) return;
 
   /* -----------------------------------------------------
      1) TAP KHÁCH
@@ -1794,16 +1798,7 @@ document.addEventListener("click", e => {
     saveState();
     return;
   }
-
-  /* -----------------------------------------------------
-     3) TAP VÙNG TRỐNG → BỎ CHỌN
-     ----------------------------------------------------- */
-  if (selectedGuest) {
-    selectedGuest.classList.remove("selected");
-    selectedGuest = null;
-  }
 });
-
 
 </script>
 
