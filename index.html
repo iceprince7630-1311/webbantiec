@@ -946,10 +946,10 @@ function updateUnassignedView() {
 
 <script>
 /* =====================================================
-   MODULE 6 — DRAG & TOUCH (V5.1 CLEAN VERSION)
+   MODULE 6 — DRAG & TOUCH (V5.1 STABLE)
    ===================================================== */
 
-/* ---------- DRAG DESKTOP ---------- */
+/* ---------- DRAG DESKTOP (Windows / Mac) ---------- */
 function getDragAfterElement(container, y) {
   const items = qsa("li:not(.dragging):not(.drag-placeholder)", container);
   return items.reduce((closest, child) => {
@@ -961,20 +961,20 @@ function getDragAfterElement(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
 }
 
-/* Desktop drag (Windows / Mac) */
+/* Desktop drag */
 document.addEventListener("dragstart", e => {
   if (interactionMode !== "drag") return;
+  if (isAndroid) return; // ❗ Android không drag
   if (e.target.tagName !== "LI") return;
 
   draggedItem = e.target;
   draggedItem.classList.add("dragging");
-
-  // Firefox requires dataTransfer
   e.dataTransfer.setData("", "");
 });
 
 document.addEventListener("dragover", e => {
   if (interactionMode !== "drag") return;
+  if (isAndroid) return;
 
   const list = e.target.closest(".guest-list");
   if (!list || !draggedItem) return;
@@ -989,6 +989,7 @@ document.addEventListener("dragover", e => {
 
 document.addEventListener("drop", e => {
   if (interactionMode !== "drag") return;
+  if (isAndroid) return;
 
   const list = e.target.closest(".guest-list");
   if (!list || !draggedItem) return;
@@ -1011,16 +1012,13 @@ document.addEventListener("dragend", () => {
 });
 
 
-/* ---------- TOUCH DRAG (WINDOWS TOUCH) ---------- */
-if (isTouch) {
+/* ---------- TOUCH DRAG (Windows Touch ONLY) ---------- */
+if (isTouch && !isAndroid) {
   let touchItem = null;
   let touchClone = null;
   let timer = null;
 
   document.addEventListener("touchstart", e => {
-    /* =====================================================
-       FIX V5.1 — kiểm tra interactionMode NGAY ĐẦU
-       ===================================================== */
     if (interactionMode !== "drag") return;
 
     const li = e.target.closest(".guest-list li");
@@ -1085,6 +1083,7 @@ if (isTouch) {
 }
 
 </script>
+
 
 
 <script>
@@ -1586,7 +1585,7 @@ qs("#max-save").onclick = () => {
   maxModal.style.display = "none";
 };
 
-/* ---------- MOVE GUEST (ANDROID ARROW) ---------- */
+/* ---------- MOVE GUEST (MODAL) ---------- */
 function openMoveGuestModal(li) {
   const box = qs("#move-list");
   box.innerHTML = "";
@@ -1599,7 +1598,6 @@ function openMoveGuestModal(li) {
 
     btn.onclick = () => {
       t.querySelector(".guest-list").appendChild(li);
-      clearSelectedGuest();
       qs("#move-modal").style.display = "none";
       qsa(".table").forEach(updateTableView);
       saveState();
@@ -1726,16 +1724,10 @@ if (toggle) {
     btn.addEventListener("click", () => {
       const mode = btn.dataset.mode;
 
-      // Cập nhật mode
       interactionMode = mode;
-
-      // Lưu state
       saveState();
-
-      // Áp dụng mode vào UI + logic
       applyInteractionMode();
 
-      // Cập nhật nút active
       buttons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
     });
@@ -1755,13 +1747,9 @@ tablesEl.addEventListener("click", e => {
   const li = moveBtn.closest("li");
   if (!li) return;
 
-  // Mở modal chọn bàn
   openMoveGuestModal(li);
 });
-
-
 </script>
-
 
 
 </body>
