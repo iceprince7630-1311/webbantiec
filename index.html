@@ -299,33 +299,21 @@ body {
   z-index: 5;
 }
 
+/* Scroll bên trái cho Chưa sắp xếp */
 .unassigned-scroll {
   flex: 1;
   overflow-y: auto;
   padding: 10px;
-}
-
-/* Tên khách trong Chưa sắp xếp co lại khi hẹp */
-#unassigned .guest-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  word-break: normal; 
-  white-space: normal;
-}
-/* Scroll bên trái cho Chưa sắp xếp */
-.unassigned-scroll {
+  direction: rtl; /* Đặt scrollbar bên trái */
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: #ccc transparent;
-  padding-right: 20px; /* giữ khoảng cho thanh cuộn */
-  direction: rtl; /* Đảo chiều để scrollbar nằm bên trái */
 }
-    
-/* Scroll bên trái cho khu vực Chưa sắp xếp */
+
+/* Nội dung bên trong vẫn đọc trái sang phải */
 .unassigned-scroll > * {
-  direction: ltr; /* Nội dung vẫn đọc từ trái sang phải */
+  direction: ltr;
 }
-    
+
 /* Scroll Chrome/Webkit */
 .unassigned-scroll::-webkit-scrollbar {
   width: 8px;
@@ -340,6 +328,15 @@ body {
   border-radius: 4px;
 }
 
+/* Tên khách trong Chưa sắp xếp co lại khi hẹp */
+#unassigned .guest-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+/* Responsive: khi màn hình hẹp, chia layout khách thành 2 hàng */
 @media (max-width: 480px) {
   #unassigned li {
     flex-wrap: wrap;
