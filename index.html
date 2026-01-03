@@ -455,7 +455,7 @@ li.selected-guest .move-arrow {
   background: transparent;
   font-weight: bold;
   cursor: pointer;
-  /* z-index: 2;  ← XOÁ DÒNG NÀY */
+  z-index: 2;
   color: #555;
   opacity: 0.5;
 }
@@ -848,10 +848,8 @@ function applyInteractionMode() {
   if (interactionMode === "drag") {
     qsa(".guest-list li").forEach(li => {
       li.draggable = true;
-
-      // Cho phép click bình thường
-      li.onclick = null;
       li.style.pointerEvents = "auto";
+      li.onclick = null; // bỏ chặn click
     });
   }
 
@@ -859,14 +857,14 @@ function applyInteractionMode() {
   if (interactionMode === "tap") {
     qsa(".guest-list li").forEach(li => {
       li.draggable = false;
+      li.style.pointerEvents = "auto"; // KHÔNG tắt pointer-events
 
-      // Quan trọng: KHÔNG tắt pointer-events
-      // Thay vào đó, chặn click lan ra ngoài
-      li.onclick = (e) => e.stopPropagation();
-
-      // Icon Move vẫn click được
-      const btn = li.querySelector(".move-btn");
-      if (btn) btn.style.pointerEvents = "auto";
+      // Chỉ chặn click vào li, KHÔNG chặn click vào move-btn
+      li.onclick = (e) => {
+        if (!e.target.classList.contains("move-btn")) {
+          e.stopPropagation();
+        }
+      };
     });
   }
 
