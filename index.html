@@ -1019,6 +1019,9 @@ if (isTouch) {
   let timer = null;
 
   document.addEventListener("touchstart", e => {
+    /* =====================================================
+       FIX V5.1 — kiểm tra interactionMode NGAY ĐẦU
+       ===================================================== */
     if (interactionMode !== "drag") return;
 
     const li = e.target.closest(".guest-list li");
@@ -1717,78 +1720,93 @@ qs("#add-guest").onclick = () => {
    ===================================================== */
 
 const toggle = document.getElementById("interaction-toggle");
-const buttons = toggle.querySelectorAll("button");
+if (toggle) {
+  const buttons = toggle.querySelectorAll("button");
 
-buttons.forEach(btn => {
-  btn.addEventListener("click", () => {
-    const mode = btn.dataset.mode;
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const mode = btn.dataset.mode;
 
-    interactionMode = mode;
-    saveState();
-    applyInteractionMode();
+      // Cập nhật mode
+      interactionMode = mode;
 
-    buttons.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
+      // Lưu state
+      saveState();
+
+      // Áp dụng mode vào UI + logic
+      applyInteractionMode();
+
+      // Cập nhật nút active
+      buttons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
   });
-});
+}
 
 /* =====================================================
-   V5.1 — TAP MODE LOGIC
+   V5.1 — TAP MODE LOGIC (ONE LISTENER VERSION)
    ===================================================== */
 
 let selectedGuest = null;
 
-/* Tap khách */
 document.addEventListener("click", e => {
+  // Chỉ chạy khi đang ở Tap Mode
   if (interactionMode !== "tap") return;
 
   const li = e.target.closest("li");
-  if (!li) return;
+  const table = e.target.closest(".table");
 
-  if (selectedGuest === li) {
-    li.classList.remove("selected");
-    selectedGuest = null;
+  /* -----------------------------------------------------
+     1) TAP KHÁCH
+     ----------------------------------------------------- */
+  if (li) {
+    // Nếu tap lại khách đang chọn → bỏ chọn
+    if (selectedGuest === li) {
+      li.classList.remove("selected");
+      selectedGuest = null;
+      return;
+    }
+
+    // Nếu đang chọn khách khác → bỏ chọn cũ
+    if (selectedGuest) {
+      selectedGuest.classList.remove("selected");
+    }
+
+    // Chọn khách mới
+    selectedGuest = li;
+    li.classList.add("selected");
     return;
   }
 
-  if (selectedGuest) selectedGuest.classList.remove("selected");
+  /* -----------------------------------------------------
+     2) TAP BÀN ĐỂ CHUYỂN KHÁCH
+     ----------------------------------------------------- */
+  if (table && selectedGuest) {
+    const list = table.querySelector(".guest-list");
+    list.appendChild(selectedGuest);
 
-  selectedGuest = li;
-  li.classList.add("selected");
+    selectedGuest.classList.remove("selected");
+    selectedGuest = null;
+
+    updateTableView(table);
+    updateUnassignedView();
+    updateSummaryView();
+    saveState();
+    return;
+  }
+
+  /* -----------------------------------------------------
+     3) TAP VÙNG TRỐNG → BỎ CHỌN
+     ----------------------------------------------------- */
+  if (selectedGuest) {
+    selectedGuest.classList.remove("selected");
+    selectedGuest = null;
+  }
 });
 
-/* Tap bàn để chuyển khách */
-document.addEventListener("click", e => {
-  if (interactionMode !== "tap") return;
-  if (!selectedGuest) return;
-
-  const table = e.target.closest(".table");
-  if (!table) return;
-
-  const list = table.querySelector(".guest-list");
-  list.appendChild(selectedGuest);
-
-  selectedGuest.classList.remove("selected");
-  selectedGuest = null;
-
-  updateTableView(table);
-  updateUnassignedView();
-  updateSummaryView();
-  saveState();
-});
-
-/* Tap vùng trống để bỏ chọn */
-document.addEventListener("click", e => {
-  if (interactionMode !== "tap") return;
-  if (!selectedGuest) return;
-
-  if (e.target.closest("li") || e.target.closest(".table")) return;
-
-  selectedGuest.classList.remove("selected");
-  selectedGuest = null;
-});
 
 </script>
+
 
 
 </body>
