@@ -1960,12 +1960,11 @@ if (toggle) {
   updateToggleUI();
 }
 
-
 /* =====================================================
    V5.1 — TAP MODE (ICON-BASED)
    ===================================================== */
 
-tablesEl.addEventListener("click", e => {
+function handleMoveClick(e) {
   if (interactionMode !== "tap") return;
 
   const moveBtn = e.target.closest(".move-btn");
@@ -1975,7 +1974,14 @@ tablesEl.addEventListener("click", e => {
   if (!li) return;
 
   openMoveGuestModal(li);
-});
+}
+
+// Click trong khu vực bàn
+tablesEl.addEventListener("click", handleMoveClick);
+
+// Click trong khu vực "Chưa sắp xếp"
+unassigned.addEventListener("click", handleMoveClick);
+
 </script>
 
 
