@@ -594,7 +594,16 @@ body.edit-names-mode .move-btn {
 body.edit-names-mode .selected-guest {
   background: none !important;
 }
-
+/* =====================================================
+   QUICK ADD TO TABLE
+   ===================================================== */
+.quick-add-input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
 
 
   </style>
@@ -806,6 +815,17 @@ body.edit-names-mode .selected-guest {
   </div>
 </div>
 
+<!-- MODAL THÊM KHÁCH VÀO BÀN -->
+<div class="modal" id="quick-add-modal">
+  <div class="modal-content">
+    <h3>Nhập tên khách để thêm vào bàn:</h3>
+    <input type="text" id="quick-add-input" placeholder="Nhập tên khách..." class="quick-add-input">
+    <div class="modal-actions">
+      <button id="quick-add-cancel" class="btn">Hủy</button>
+      <button id="quick-add-confirm" class="btn">Thêm</button>
+    </div>
+  </div>
+</div>
 
 
 
@@ -1944,27 +1964,43 @@ tablesEl.addEventListener("click", e => {
   }
 
   /* Quick add */
-  if (e.target.classList.contains("quick-add-btn")) {
-    const box = table.querySelector(".quick-add");
-    const input = box.querySelector(".quick-add-input");
-    box.classList.toggle("hidden");
-    input.focus();
+  let currentTableForQuickAdd = null;
 
-    input.onkeydown = ev => {
-      if (ev.key === "Enter") {
-        const name = normalizeName(input.value);
-        if (name) {
-          table.querySelector(".guest-list")
-            .appendChild(createGuestLi(name));
-          updateTableView(table);
-          saveState();
-        }
-        input.value = "";
-        box.classList.add("hidden");
-      }
-      if (ev.key === "Escape") box.classList.add("hidden");
-    };
-  }
+document.addEventListener("click", e => {
+  const btn = e.target.closest(".quick-add-btn");
+  if (!btn) return;
+
+  const table = btn.closest(".table");
+  if (!table) return;
+
+  currentTableForQuickAdd = table;
+  qs("#quick-add-input").value = "";
+  qs("#quick-add-modal").style.display = "flex";
+  qs("#quick-add-input").focus();
+});
+
+qs("#quick-add-cancel").onclick = () => {
+  qs("#quick-add-modal").style.display = "none";
+  currentTableForQuickAdd = null;
+};
+
+qs("#quick-add-confirm").onclick = () => {
+  const name = normalizeName(qs("#quick-add-input").value);
+  if (!name) return;
+
+  const ul = currentTableForQuickAdd.querySelector(".guest-list");
+  if (!ul) return;
+
+  const li = createGuestLi(name);
+  ul.appendChild(li);
+
+  qs("#quick-add-modal").style.display = "none";
+  currentTableForQuickAdd = null;
+
+  updateTableView();
+  saveState();
+};
+
 
   /* Auto fix */
   if (e.target.classList.contains("auto-fix-btn")) {
