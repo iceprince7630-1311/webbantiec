@@ -709,9 +709,10 @@ body.edit-names-mode .selected-guest {
   /* Hàng 2: tên khách */
   #unassigned li .guest-name {
     order: 4;
-    width: 100%;
+    flex: unset; /* ⭐ Gỡ bỏ flex: 1 */
+    width: 100%; /* ⭐ Chiếm toàn bộ chiều ngang */
     margin-top: 4px;
-    white-space: normal;
+    white-space: normal; /* ⭐ Cho phép xuống dòng */
     word-break: break-word;
   }
 }
