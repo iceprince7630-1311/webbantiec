@@ -535,6 +535,31 @@ li.selected-guest .move-arrow {
   pointer-events: none;
 }
 
+/* Khi đang sửa tên khách */
+.edit-names-mode .btn {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Chỉ 2 nút này sáng và bấm được */
+.edit-names-mode #edit-names-save,
+.edit-names-mode #edit-names-cancel {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Move-btn mờ trong edit mode */
+.edit-names-mode .move-btn {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+/* Table actions cũng mờ */
+.edit-names-mode .table-actions .btn {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
   </style>
   
 </head>
@@ -1056,7 +1081,7 @@ function updateUnassignedView() {
 
 <script>
 /* =====================================================
-   MODULE 6 — DRAG & TOUCH (V5.1 STABLE)
+   MODULE 6 — DRAG & TOUCH (V5.1 FIXED FOR EDIT MODE)
    ===================================================== */
 
 /* ---------- DRAG DESKTOP (Windows / Mac) ---------- */
@@ -1074,7 +1099,8 @@ function getDragAfterElement(container, y) {
 /* Desktop drag */
 document.addEventListener("dragstart", e => {
   if (interactionMode !== "drag") return;
-  if (isAndroid) return; // ❗ Android không drag
+  if (editNamesMode) return;          // ❗ Không drag khi đang sửa tên
+  if (isAndroid) return;
   if (e.target.tagName !== "LI") return;
 
   draggedItem = e.target;
@@ -1084,6 +1110,7 @@ document.addEventListener("dragstart", e => {
 
 document.addEventListener("dragover", e => {
   if (interactionMode !== "drag") return;
+  if (editNamesMode) return;          // ❗ Không drag khi đang sửa tên
   if (isAndroid) return;
 
   const list = e.target.closest(".guest-list");
@@ -1099,6 +1126,7 @@ document.addEventListener("dragover", e => {
 
 document.addEventListener("drop", e => {
   if (interactionMode !== "drag") return;
+  if (editNamesMode) return;          // ❗ Không drop khi đang sửa tên
   if (isAndroid) return;
 
   const list = e.target.closest(".guest-list");
@@ -1130,6 +1158,7 @@ if (isTouch && !isAndroid) {
 
   document.addEventListener("touchstart", e => {
     if (interactionMode !== "drag") return;
+    if (editNamesMode) return;        // ❗ Không drag khi đang sửa tên
 
     const li = e.target.closest(".guest-list li");
     if (!li) return;
@@ -1152,6 +1181,7 @@ if (isTouch && !isAndroid) {
 
   document.addEventListener("touchmove", e => {
     if (interactionMode !== "drag") return;
+    if (editNamesMode) return;        // ❗ Không drag khi đang sửa tên
 
     if (timer) { clearTimeout(timer); timer = null; }
     if (!touchItem || !touchClone) return;
@@ -1174,6 +1204,7 @@ if (isTouch && !isAndroid) {
 
   document.addEventListener("touchend", () => {
     if (interactionMode !== "drag") return;
+    if (editNamesMode) return;        // ❗ Không drop khi đang sửa tên
 
     if (!touchItem) return;
 
@@ -1191,8 +1222,8 @@ if (isTouch && !isAndroid) {
     setTimeout(updateUnassignedView, 0);
   });
 }
-
 </script>
+
 
 
 
@@ -1208,7 +1239,6 @@ const deleteCancelBtn  = qs("#delete-cancel-btn");
 
 deleteBtn.onclick = () => {
   deleteMode = true;
-  // clearSelectedGuest();   // ❌ BỎ DÒNG NÀY
   document.body.classList.add("delete-mode");
 
   deleteBtn.classList.add("hidden");
@@ -1257,7 +1287,11 @@ document.addEventListener("click", e => {
   }
 });
 
-/* ---------- EDIT NAME MODE ---------- */
+
+/* =====================================================
+   EDIT NAME MODE
+   ===================================================== */
+
 let originalNames = new Map();
 
 const editBtn    = qs("#edit-names-btn");
@@ -1267,7 +1301,6 @@ const toolbarBlocker = qs("#toolbar-blocker");
 
 editBtn.onclick = () => {
   editNamesMode = true;
-  // clearSelectedGuest();   // ❌ BỎ DÒNG NÀY
   document.body.classList.add("edit-names-mode");
   toolbarBlocker.style.pointerEvents = "auto";
 
@@ -1278,9 +1311,11 @@ editBtn.onclick = () => {
   originalNames.clear();
   qsa(".guest-list li").forEach(li => {
     originalNames.set(li, li.dataset.name);
+
     const span = li.querySelector(".guest-name");
     if (span) span.contentEditable = "true";
-    li.draggable = false;
+
+    li.draggable = false; // tắt drag trong edit mode
   });
 
   updateUnassignedView();
@@ -1289,7 +1324,15 @@ editBtn.onclick = () => {
 editCancel.onclick = () => {
   originalNames.forEach((oldName, li) => {
     li.dataset.name = oldName;
-    setGuestText(li, oldName);
+
+    // Hiển thị đúng theo khu vực
+    if (li.parentElement === unassigned) {
+      const many = qsa("#unassigned li:not(.drag-placeholder)").length > 20;
+      setGuestText(li, many ? shortName(oldName) : oldName);
+    } else {
+      setGuestText(li, oldName);
+    }
+
     const span = li.querySelector(".guest-name");
     if (span) span.contentEditable = "false";
   });
@@ -1301,9 +1344,18 @@ editSave.onclick = () => {
   qsa(".guest-list li").forEach(li => {
     const span = li.querySelector(".guest-name");
     if (!span) return;
+
     const newName = normalizeName(span.textContent);
     li.dataset.name = newName;
-    setGuestText(li, newName);
+
+    // Hiển thị đúng theo khu vực
+    if (li.parentElement === unassigned) {
+      const many = qsa("#unassigned li:not(.drag-placeholder)").length > 20;
+      setGuestText(li, many ? shortName(newName) : newName);
+    } else {
+      setGuestText(li, newName);
+    }
+
     span.contentEditable = "false";
   });
 
@@ -1316,7 +1368,7 @@ function exitEditNameMode(save) {
   toolbarBlocker.style.pointerEvents = "none";
 
   qsa(".guest-list li").forEach(li => {
-    li.draggable = !isAndroid;
+    li.draggable = !isAndroid; // bật lại drag
   });
 
   editBtn.classList.remove("hidden");
@@ -1328,6 +1380,7 @@ function exitEditNameMode(save) {
   if (save) saveState();
 }
 </script>
+
 
 <script>
 /* =====================================================
