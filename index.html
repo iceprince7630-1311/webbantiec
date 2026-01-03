@@ -685,39 +685,47 @@ body.edit-names-mode .selected-guest {
 
 /* ===== Khi màn hình hẹp: chia 2 hàng ===== */
 @media (max-width: 480px) {
-  #unassigned li {
+
+  /* Flex wrap cho đúng selector */
+  #unassigned .guest-list li {
     display: flex;
-    justify-content: flex-start !important; /* ✅ Cho phép xuống hàng */
     flex-wrap: wrap;
-    align-items: center;
+    justify-content: flex-start !important;
+    align-items: flex-start;
     gap: 6px;
     min-width: 0;
   }
 
-  /* Hàng 1: số thứ tự (CSS counter), move, delete */
-  #unassigned li::before {
+  /* Hàng 1: số thứ tự */
+  #unassigned .guest-list li::before {
     order: 1;
+    flex-shrink: 0;
+    display: inline-flex;
+  }
+
+  /* Hàng 1: move */
+  #unassigned .guest-list li .move-btn {
+    order: 2;
     flex-shrink: 0;
   }
 
-  #unassigned li .move-btn {
-    order: 2;
-  }
-
-  #unassigned li .delete-x {
+  /* Hàng 1: delete */
+  #unassigned .guest-list li .delete-x {
     order: 3;
+    flex-shrink: 0;
   }
 
   /* Hàng 2: tên khách */
-  #unassigned li .guest-name {
+  #unassigned .guest-list li .guest-name {
     order: 4;
-    flex: unset; /* ⭐ Gỡ bỏ flex: 1 */
-    width: 100%; /* ⭐ Chiếm toàn bộ chiều ngang */
+    flex: unset !important;
+    width: 100% !important;
     margin-top: 4px;
-    white-space: normal !important; /* ⭐ Cho phép xuống dòng */
+    white-space: normal !important;
     word-break: break-word;
   }
 }
+
 
 
   </style>
