@@ -501,6 +501,23 @@ li.selected-guest .move-arrow {
   font-size: 13px;
   z-index: 999;
 }
+    
+/* move modal */
+.move-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.move-column h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.move-column .btn {
+  width: 100%;
+  margin-bottom: 6px;
+}
 
   </style>
   
@@ -684,17 +701,31 @@ li.selected-guest .move-arrow {
   </div>
 </div>
 
-<!-- MOVE GUEST -->
-<div class="modal" id="move-modal">
+<div id="move-modal" class="modal">
   <div class="modal-content">
-    <h3>Chọn bàn</h3>
-    <div id="move-list"></div>
+    <h3>Di chuyển khách</h3>
 
-    <div class="modal-actions">
-      <button id="move-cancel" class="btn">Hủy</button>
+    <div class="move-grid">
+      <!-- Cột trái: Di chuyển trong bàn -->
+      <div class="move-column">
+        <h4>Di chuyển trong bàn</h4>
+        <button class="btn move-top">⬆ Lên đầu</button>
+        <button class="btn move-up">🔼 Lên 1 vị trí</button>
+        <button class="btn move-down">🔽 Xuống 1 vị trí</button>
+        <button class="btn move-bottom">⬇ Xuống cuối</button>
+      </div>
+
+      <!-- Cột phải: Di chuyển sang bàn khác -->
+      <div class="move-column">
+        <h4>Chuyển sang bàn khác</h4>
+        <div id="move-list"></div>
+      </div>
     </div>
+
+    <button id="move-cancel" class="btn" style="margin-top:10px;width:100%">Đóng</button>
   </div>
 </div>
+
 
 <!-- ROOT IN PDF -->
 <div id="print-root"></div>
@@ -1646,34 +1677,88 @@ qs("#max-save").onclick = () => {
   maxModal.style.display = "none";
 };
 
-/* ---------- MOVE GUEST (MODAL) ---------- */
+/* ---------- MOVE GUEST MODAL (V5.1 FULL VERSION) ---------- */
 function openMoveGuestModal(li) {
+  const currentList = li.parentElement;
+  const siblings = Array.from(currentList.querySelectorAll("li:not(.drag-placeholder)"));
+  const index = siblings.indexOf(li);
+
+  /* ====== 1) Gán sự kiện cho 4 nút di chuyển trong bàn ====== */
+
+  // Lên đầu
+  qs(".move-top").onclick = () => {
+    currentList.insertBefore(li, siblings[0]);
+    finalizeMove();
+  };
+
+  // Lên 1 vị trí
+  qs(".move-up").onclick = () => {
+    if (index > 0) {
+      currentList.insertBefore(li, siblings[index - 1]);
+      finalizeMove();
+    }
+  };
+
+  // Xuống 1 vị trí
+  qs(".move-down").onclick = () => {
+    if (index < siblings.length - 1) {
+      currentList.insertBefore(li, siblings[index + 2] || null);
+      finalizeMove();
+    }
+  };
+
+  // Xuống cuối
+  qs(".move-bottom").onclick = () => {
+    currentList.appendChild(li);
+    finalizeMove();
+  };
+
+  /* ====== 2) Tạo danh sách bàn khác ====== */
   const box = qs("#move-list");
   box.innerHTML = "";
 
+  // Thêm mục "Chưa sắp xếp"
+  const unBtn = document.createElement("button");
+  unBtn.className = "btn";
+  unBtn.textContent = "Chưa sắp xếp";
+  unBtn.onclick = () => {
+    unassigned.appendChild(li);
+    finalizeMove();
+  };
+  box.appendChild(unBtn);
+
+  // Thêm các bàn khác
   qsa(".table").forEach(t => {
+    const list = t.querySelector(".guest-list");
+
+    // Không thêm bàn hiện tại
+    if (list === currentList) return;
+
     const btn = document.createElement("button");
     btn.className = "btn";
     btn.textContent = t.dataset.baseName;
-    btn.style.width = "100%";
 
     btn.onclick = () => {
-      t.querySelector(".guest-list").appendChild(li);
-      qs("#move-modal").style.display = "none";
-      qsa(".table").forEach(updateTableView);
-      saveState();
-      updateUnassignedView();
+      list.appendChild(li);
+      finalizeMove();
     };
 
     box.appendChild(btn);
   });
 
+  /* ====== 3) Hiển thị modal ====== */
   qs("#move-modal").style.display = "flex";
+
+  /* ====== 4) Hàm cập nhật sau khi di chuyển ====== */
+  function finalizeMove() {
+    qs("#move-modal").style.display = "none";
+    qsa(".table").forEach(updateTableView);
+    updateUnassignedView();
+    updateSummaryView();
+    saveState();
+  }
 }
 
-qs("#move-cancel").onclick = () => {
-  qs("#move-modal").style.display = "none";
-};
 
 /* ---------- TABLE ACTIONS ---------- */
 tablesEl.addEventListener("click", e => {
