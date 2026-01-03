@@ -509,20 +509,8 @@ li.selected-guest .move-arrow {
   gap: 12px;
 }
 
-.move-column h4 {
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-
-.move-column .btn {
-  width: 100%;
-  margin-bottom: 6px;
-}
-
-.move-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+.move-grid.single-column {
+  grid-template-columns: 1fr;
 }
 
 .move-column h4 {
@@ -737,19 +725,16 @@ li.selected-guest .move-arrow {
 
     <div class="move-grid">
       <!-- Cột trái: Di chuyển trong bàn -->
-      <div class="move-column">
+      <div class="move-column move-column-left">
         <h4>Trong bàn:</h4>
         <button class="btn move-top">⬆ Lên đầu</button>
-
-        <!-- Chỉ icon -->
         <button class="btn move-up">🔼</button>
         <button class="btn move-down">🔽</button>
-
         <button class="btn move-bottom">⬇ Xuống cuối</button>
       </div>
 
       <!-- Cột phải: Di chuyển sang bàn khác -->
-      <div class="move-column">
+      <div class="move-column move-column-right">
         <h4>Bàn khác:</h4>
         <div id="move-list"></div>
       </div>
@@ -758,6 +743,7 @@ li.selected-guest .move-arrow {
     <button id="move-cancel" class="btn move-close" style="margin-top:10px;width:100%">Đóng</button>
   </div>
 </div>
+
 
 
 
@@ -1717,66 +1703,95 @@ function openMoveGuestModal(li) {
   const currentList = li.parentElement;
   const siblings = Array.from(currentList.querySelectorAll("li:not(.drag-placeholder)"));
   const index = siblings.indexOf(li);
+  const isInUnassigned = (currentList === unassigned);
 
-  /* ====== 1) Gán sự kiện cho 4 nút di chuyển trong bàn ====== */
+  const grid = qs(".move-grid");
+  const leftCol = qs(".move-column-left");
 
-  // Lên đầu
-  qs(".move-top").onclick = () => {
-    currentList.insertBefore(li, siblings[0]);
-    finalizeMove();
-  };
-
-  // Lên 1 vị trí
+  const btnTop = qs(".move-top");
   const btnUp = qs(".move-up");
-  btnUp.onclick = () => {
-    if (index > 0) {
-      currentList.insertBefore(li, siblings[index - 1]);
-      finalizeMove();
-    }
-  };
-
-  // Xuống 1 vị trí
   const btnDown = qs(".move-down");
-  btnDown.onclick = () => {
-    if (index < siblings.length - 1) {
-      currentList.insertBefore(li, siblings[index + 2] || null);
-      finalizeMove();
+  const btnBottom = qs(".move-bottom");
+
+  /* ====== 0) Reset trạng thái nút & layout ====== */
+  [btnTop, btnUp, btnDown, btnBottom].forEach(b => b.classList.remove("disabled"));
+  leftCol.style.display = "";
+  grid.classList.remove("single-column");
+
+  /* ====== 1) Nếu khách đang ở 'Chưa sắp xếp' ====== */
+  if (isInUnassigned) {
+    // Ẩn hoàn toàn cột "Trong bàn"
+    leftCol.style.display = "none";
+    grid.classList.add("single-column");
+  } else {
+    // Cột trái vẫn dùng → kiểm tra vị trí & số lượng
+    // Nếu chỉ có 1 tên trong bàn → mờ hết 4 nút
+    if (siblings.length <= 1) {
+      [btnTop, btnUp, btnDown, btnBottom].forEach(b => b.classList.add("disabled"));
+    } else {
+      // Mờ nút lên 1 vị trí nếu đang ở đầu
+      if (index === 0) {
+        btnUp.classList.add("disabled");
+        btnTop.classList.add("disabled");
+      }
+      // Mờ nút xuống 1 vị trí nếu đang ở cuối
+      if (index === siblings.length - 1) {
+        btnDown.classList.add("disabled");
+        btnBottom.classList.add("disabled");
+      }
     }
-  };
 
-  // Xuống cuối
-  qs(".move-bottom").onclick = () => {
-    currentList.appendChild(li);
-    finalizeMove();
-  };
+    // Gán hành vi cho 4 nút trong bàn
+    btnTop.onclick = () => {
+      if (btnTop.classList.contains("disabled")) return;
+      currentList.insertBefore(li, siblings[0]);
+      finalizeMove();
+    };
 
-  /* ====== 1.1 — Disable nút nếu ở đầu/cuối ====== */
-  if (index === 0) btnUp.classList.add("disabled");
-  else btnUp.classList.remove("disabled");
+    btnUp.onclick = () => {
+      if (btnUp.classList.contains("disabled")) return;
+      if (index > 0) {
+        currentList.insertBefore(li, siblings[index - 1]);
+        finalizeMove();
+      }
+    };
 
-  if (index === siblings.length - 1) btnDown.classList.add("disabled");
-  else btnDown.classList.remove("disabled");
+    btnDown.onclick = () => {
+      if (btnDown.classList.contains("disabled")) return;
+      if (index < siblings.length - 1) {
+        currentList.insertBefore(li, siblings[index + 2] || null);
+        finalizeMove();
+      }
+    };
+
+    btnBottom.onclick = () => {
+      if (btnBottom.classList.contains("disabled")) return;
+      currentList.appendChild(li);
+      finalizeMove();
+    };
+  }
 
   /* ====== 2) Tạo danh sách bàn khác ====== */
   const box = qs("#move-list");
   box.innerHTML = "";
 
-  // Thêm mục "Chưa sắp xếp"
-  const unBtn = document.createElement("button");
-  unBtn.className = "btn unassigned-btn";
-  unBtn.textContent = "Chưa sắp xếp";
-  unBtn.onclick = () => {
-    unassigned.appendChild(li);
-    finalizeMove();
-  };
-  box.appendChild(unBtn);
+  // Nếu KHÔNG ở 'Chưa sắp xếp' → cho phép chuyển về 'Chưa sắp xếp'
+  if (!isInUnassigned) {
+    const unBtn = document.createElement("button");
+    unBtn.className = "btn unassigned-btn";
+    unBtn.textContent = "Chưa sắp xếp";
+    unBtn.onclick = () => {
+      unassigned.appendChild(li);
+      finalizeMove();
+    };
+    box.appendChild(unBtn);
+  }
 
   // Thêm các bàn khác
   qsa(".table").forEach(t => {
     const list = t.querySelector(".guest-list");
-
-    // Không thêm bàn hiện tại
-    if (list === currentList) return;
+    // Loại trừ bàn hiện tại (nếu không phải unassigned)
+    if (!isInUnassigned && list === currentList) return;
 
     const btn = document.createElement("button");
     btn.className = "btn";
@@ -1807,6 +1822,7 @@ function openMoveGuestModal(li) {
     saveState();
   }
 }
+
 
   
 
