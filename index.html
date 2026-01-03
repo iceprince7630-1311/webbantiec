@@ -310,16 +310,22 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  word-break: break-word; 
+  word-break: normal; 
   white-space: normal;
 }
 /* Scroll bên trái cho Chưa sắp xếp */
 .unassigned-scroll {
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: #ccc transparent;
-  padding-right: 10px; /* giữ khoảng cho thanh cuộn */
+  padding-right: 20px; /* giữ khoảng cho thanh cuộn */
+  direction: rtl; /* Đảo chiều để scrollbar nằm bên trái */
 }
-
+    
+/* Scroll bên trái cho khu vực Chưa sắp xếp */
+.unassigned-scroll > * {
+  direction: ltr; /* Nội dung vẫn đọc từ trái sang phải */
+}
+    
 /* Scroll Chrome/Webkit */
 .unassigned-scroll::-webkit-scrollbar {
   width: 8px;
@@ -332,6 +338,25 @@ body {
 .unassigned-scroll::-webkit-scrollbar-thumb {
   background-color: #ccc;
   border-radius: 4px;
+}
+
+@media (max-width: 480px) {
+  #unassigned li {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  #unassigned li::before,
+  #unassigned li .move-btn {
+    order: 1;
+  }
+
+  #unassigned li .guest-name {
+    order: 2;
+    width: 100%;
+    margin-top: 4px;
+    white-space: normal;
+  }
 }
 
 /* =====================================================
