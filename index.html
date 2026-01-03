@@ -407,6 +407,45 @@ li.selected-guest .move-arrow {
   overflow: auto;
   padding: 12px;
 }
+/* =====================================================
+   V5.1 — Interaction Toggle UI
+   ===================================================== */
+
+#interaction-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Nút "!" hiển thị tooltip */
+#interaction-toggle .info {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 50%;
+  background: #ddd;
+  font-weight: bold;
+  position: relative;
+}
+
+/* Tooltip hiển thị khi hover */
+#interaction-toggle .info:hover::after {
+  content: "Tap: phù hợp Android\nDrag: phù hợp Windows";
+  white-space: pre;
+  position: absolute;
+  top: 28px;
+  left: 0;
+  background: #333;
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  z-index: 999;
+}
+
+li.selected {
+  outline: 2px solid #007bff;
+  border-radius: 4px;
+}
 
   </style>
   
@@ -457,6 +496,21 @@ li.selected-guest .move-arrow {
       </div>
 
       <button id="help-btn" class="btn">❓ Hướng dẫn</button>
+      
+<!-- =====================================================
+     V5.1 — Interaction Mode Toggle (Tap / Drag)
+     User tự chọn mode, không phụ thuộc thiết bị
+     ===================================================== -->
+<div id="interaction-toggle">
+  <!-- Nút chọn Tap Mode -->
+  <button data-mode="tap" class="btn small">Tap</button>
+
+  <!-- Nút chọn Drag Mode (mặc định) -->
+  <button data-mode="drag" class="btn small active">Drag</button>
+
+  <!-- Nút thông tin: hover để xem tooltip -->
+  <span id="mode-info" class="info">!</span>
+</div>
 
       <!-- SUMMARY -->
       <div id="summary">
@@ -633,6 +687,15 @@ let selectedGuest   = null;
 let draggedItem = null;
 const dragPlaceholder = document.createElement("li");
 dragPlaceholder.className = "drag-placeholder";
+  
+/* =====================================================
+   V5.1 — Interaction Mode
+   "tap"  → chạm khách → chạm bàn
+   "drag" → kéo thả truyền thống
+   ===================================================== */
+
+let interactionMode = "drag"; // mặc định
+
 </script>
 
 <script>
@@ -681,6 +744,24 @@ function qs(selector, root = document) {
 function qsa(selector, root = document) {
   return [...root.querySelectorAll(selector)];
 }
+  
+/* =====================================================
+   V5.1 — Áp dụng Interaction Mode (Tap / Drag)
+   Hàm này chỉ thay đổi UI (class của body)
+   và được gọi sau khi loadState() hoặc khi user đổi mode
+   ===================================================== */
+function applyInteractionMode() {
+  if (interactionMode === "tap") {
+    // Bật giao diện tap mode
+    document.body.classList.add("tap-mode");
+    document.body.classList.remove("drag-mode");
+  } else {
+    // Bật giao diện drag mode
+    document.body.classList.add("drag-mode");
+    document.body.classList.remove("tap-mode");
+  }
+}
+
 </script>
 
 <script>
@@ -866,7 +947,7 @@ function updateUnassignedView() {
 
 <script>
 /* =====================================================
-   MODULE 6 — DRAG / TOUCH / ANDROID
+   MODULE 6 — DRAG & TOUCH (V5.1 CLEAN VERSION)
    ===================================================== */
 
 /* ---------- DRAG DESKTOP ---------- */
@@ -881,61 +962,78 @@ function getDragAfterElement(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
 }
 
-if (!isAndroid) {
-  document.addEventListener("dragstart", e => {
-    if (e.target.tagName !== "LI") return;
-    draggedItem = e.target;
-    draggedItem.classList.add("dragging");
-    e.dataTransfer.setData("", "");
-  });
+/* Desktop drag (Windows / Mac) */
+document.addEventListener("dragstart", e => {
+  if (interactionMode !== "drag") return;
+  if (e.target.tagName !== "LI") return;
 
-  document.addEventListener("dragover", e => {
-    const list = e.target.closest(".guest-list");
-    if (!list || !draggedItem) return;
-    e.preventDefault();
-    const after = getDragAfterElement(list, e.clientY);
-    after
-      ? list.insertBefore(dragPlaceholder, after)
-      : list.appendChild(dragPlaceholder);
-  });
+  draggedItem = e.target;
+  draggedItem.classList.add("dragging");
 
-  document.addEventListener("drop", e => {
-    const list = e.target.closest(".guest-list");
-    if (!list || !draggedItem) return;
-    e.preventDefault();
-    list.insertBefore(draggedItem, dragPlaceholder);
-    dragPlaceholder.remove();
-    draggedItem.classList.remove("dragging");
-    draggedItem = null;
+  // Firefox requires dataTransfer
+  e.dataTransfer.setData("", "");
+});
 
-    qsa(".table").forEach(updateTableView);
-    saveState();
-    setTimeout(updateUnassignedView, 0);
-  });
+document.addEventListener("dragover", e => {
+  if (interactionMode !== "drag") return;
 
-  document.addEventListener("dragend", () => {
-    dragPlaceholder.remove();
-    setTimeout(updateUnassignedView, 0);
-  });
-}
+  const list = e.target.closest(".guest-list");
+  if (!list || !draggedItem) return;
+
+  e.preventDefault();
+
+  const after = getDragAfterElement(list, e.clientY);
+  after
+    ? list.insertBefore(dragPlaceholder, after)
+    : list.appendChild(dragPlaceholder);
+});
+
+document.addEventListener("drop", e => {
+  if (interactionMode !== "drag") return;
+
+  const list = e.target.closest(".guest-list");
+  if (!list || !draggedItem) return;
+
+  e.preventDefault();
+
+  list.insertBefore(draggedItem, dragPlaceholder);
+  dragPlaceholder.remove();
+  draggedItem.classList.remove("dragging");
+  draggedItem = null;
+
+  qsa(".table").forEach(updateTableView);
+  saveState();
+  setTimeout(updateUnassignedView, 0);
+});
+
+document.addEventListener("dragend", () => {
+  dragPlaceholder.remove();
+  setTimeout(updateUnassignedView, 0);
+});
+
 
 /* ---------- TOUCH DRAG (WINDOWS TOUCH) ---------- */
-if (isTouch && !isAndroid) {
+if (isTouch) {
   let touchItem = null;
   let touchClone = null;
   let timer = null;
 
   document.addEventListener("touchstart", e => {
+    if (interactionMode !== "drag") return;
+
     const li = e.target.closest(".guest-list li");
     if (!li) return;
 
     timer = setTimeout(() => {
       touchItem = li;
+
       const r = li.getBoundingClientRect();
       touchClone = li.cloneNode(true);
       touchClone.classList.add("touch-dragging");
       touchClone.style.width = r.width + "px";
+
       document.body.appendChild(touchClone);
+
       dragPlaceholder.style.height = r.height + "px";
       li.parentElement.insertBefore(dragPlaceholder, li);
       li.style.visibility = "hidden";
@@ -943,8 +1041,11 @@ if (isTouch && !isAndroid) {
   }, { passive: false });
 
   document.addEventListener("touchmove", e => {
+    if (interactionMode !== "drag") return;
+
     if (timer) { clearTimeout(timer); timer = null; }
     if (!touchItem || !touchClone) return;
+
     e.preventDefault();
 
     const t = e.touches[0];
@@ -962,11 +1063,16 @@ if (isTouch && !isAndroid) {
   }, { passive: false });
 
   document.addEventListener("touchend", () => {
+    if (interactionMode !== "drag") return;
+
     if (!touchItem) return;
+
     dragPlaceholder.parentElement.insertBefore(touchItem, dragPlaceholder);
     touchItem.style.visibility = "";
+
     dragPlaceholder.remove();
     if (touchClone) touchClone.remove();
+
     touchItem = null;
     touchClone = null;
 
@@ -976,66 +1082,8 @@ if (isTouch && !isAndroid) {
   });
 }
 
-/* ---------- ANDROID TAP MODE ---------- */
-document.addEventListener("click", e => {
-  if (!isAndroid) return;
-
-  const li = e.target.closest(".guest-list li");
-  if (!li) return;
-  if (deleteMode || editNamesMode) return;
-
-  if (e.target.classList.contains("move-arrow")) {
-    selectedGuest = li;
-    li.classList.add("selected-guest");
-    openMoveGuestModal(li);
-    return;
-  }
-
-  if (selectedGuest === li) {
-    clearSelectedGuest();
-    return;
-  }
-
-  clearSelectedGuest();
-  selectedGuest = li;
-  li.classList.add("selected-guest");
-});
-
-/* Android: tap bàn để chuyển khách */
-tablesEl.addEventListener("click", e => {
-  if (!isAndroid) return;
-
-  const table = e.target.closest(".table");
-  if (!table || !selectedGuest) return;
-  if (editNamesMode || deleteMode) return;
-
-  const list = table.querySelector(".guest-list");
-  const max  = getTableMax(table);
-  const count = qsa("li:not(.drag-placeholder)", list).length;
-
-  if (count >= max) {
-    alert("Bàn đã đủ người!");
-    return;
-  }
-
-  list.appendChild(selectedGuest);
-  clearSelectedGuest();
-  qsa(".table").forEach(updateTableView);
-  saveState();
-  updateUnassignedView();
-});
-
-/* Android: chặn drag mặc định */
-if (isAndroid) {
-  document.addEventListener("touchstart", e => {
-    const li = e.target.closest("li");
-    if (!li || editNamesMode) return;
-    li.draggable = false;
-    li.style.userSelect = "none";
-    li.style.touchAction = "manipulation";
-  }, { passive: true });
-}
 </script>
+
 
 <script>
 /* =====================================================
@@ -1179,6 +1227,10 @@ const STORAGE_KEY = "wedding_state";
 
 /* ---------- SAVE ---------- */
 function saveState() {
+
+  /* =====================================================
+     V5.1 — Thu thập dữ liệu bàn & khách
+     ===================================================== */
   const state = {
     tables: qsa(".table").map(t => ({
       name: t.dataset.baseName,
@@ -1186,16 +1238,29 @@ function saveState() {
       guests: qsa("li:not(.drag-placeholder)", t.querySelector(".guest-list"))
         .map(li => li.dataset.name)
     })),
+
+    // Danh sách khách chưa xếp
     unassigned: qsa("li:not(.drag-placeholder)", unassigned)
-      .map(li => li.dataset.name)
+      .map(li => li.dataset.name),
+
+    /* =====================================================
+       V5.1 — Lưu Interaction Mode (Tap / Drag)
+       Đây là phần mới thêm vào so với V5.0
+       ===================================================== */
+    interactionMode: interactionMode
   };
 
+  /* =====================================================
+     Lưu toàn bộ state vào localStorage
+     ===================================================== */
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 /* ---------- LOAD ---------- */
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
+
+  // Nếu chưa có dữ liệu → tạo bàn mặc định
   if (!raw) {
     createTable("Bàn 1");
     updateSummaryView();
@@ -1213,23 +1278,43 @@ function loadState() {
     return;
   }
 
+  // Nếu dữ liệu không hợp lệ → tạo bàn mặc định
   if (!Array.isArray(state.tables)) {
     createTable("Bàn 1");
     updateSummaryView();
     return;
   }
 
+  // =====================================================
+  // V5.1 — Load Interaction Mode (Tap / Drag)
+  // Nếu có lưu mode trước đó → khôi phục
+  // =====================================================
+  if (state.interactionMode) {
+    interactionMode = state.interactionMode;
+  }
+
+  // Tạo lại các bàn từ state
   state.tables.forEach(t =>
     createTable(t.name, t.max, t.guests || [])
   );
 
+  // Tạo lại danh sách khách chưa xếp
   (state.unassigned || []).forEach(name => {
     const li = createGuestLi(name);
     if (li) unassigned.appendChild(li);
   });
 
+  // Cập nhật giao diện bàn
   qsa(".table").forEach(updateTableView);
+
+  // Cập nhật danh sách chưa xếp
   updateUnassignedView();
+
+  // =====================================================
+  // V5.1 — Áp dụng Interaction Mode sau khi load
+  // (để UI và logic khớp với mode đã lưu)
+  // =====================================================
+  applyInteractionMode();
 }
 
 /* ---------- CLEAR ---------- */
@@ -1622,9 +1707,86 @@ qs("#add-guest").onclick = () => {
 
   guestInput.value = "";
   updateUnassignedView();
+
   updateSummaryView();
   saveState();
 };
+
+/* =====================================================
+   V5.1 — Toggle Tap / Drag Mode
+   ===================================================== */
+
+const toggle = document.getElementById("interaction-toggle");
+const buttons = toggle.querySelectorAll("button");
+
+buttons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const mode = btn.dataset.mode;
+
+    interactionMode = mode;
+    saveState();
+    applyInteractionMode();
+
+    buttons.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
+
+/* =====================================================
+   V5.1 — TAP MODE LOGIC
+   ===================================================== */
+
+let selectedGuest = null;
+
+/* Tap khách */
+document.addEventListener("click", e => {
+  if (interactionMode !== "tap") return;
+
+  const li = e.target.closest("li");
+  if (!li) return;
+
+  if (selectedGuest === li) {
+    li.classList.remove("selected");
+    selectedGuest = null;
+    return;
+  }
+
+  if (selectedGuest) selectedGuest.classList.remove("selected");
+
+  selectedGuest = li;
+  li.classList.add("selected");
+});
+
+/* Tap bàn để chuyển khách */
+document.addEventListener("click", e => {
+  if (interactionMode !== "tap") return;
+  if (!selectedGuest) return;
+
+  const table = e.target.closest(".table");
+  if (!table) return;
+
+  const list = table.querySelector(".guest-list");
+  list.appendChild(selectedGuest);
+
+  selectedGuest.classList.remove("selected");
+  selectedGuest = null;
+
+  updateTableView(table);
+  updateUnassignedView();
+  updateSummaryView();
+  saveState();
+});
+
+/* Tap vùng trống để bỏ chọn */
+document.addEventListener("click", e => {
+  if (interactionMode !== "tap") return;
+  if (!selectedGuest) return;
+
+  if (e.target.closest("li") || e.target.closest(".table")) return;
+
+  selectedGuest.classList.remove("selected");
+  selectedGuest = null;
+});
 
 </script>
 
