@@ -308,13 +308,6 @@ body {
 /* =====================================================
    7. MODES & DRAG UI
    ===================================================== */
-.move-arrow {
-  display: none;
-  font-size: 22px;
-  padding: 4px 6px;
-  background: #eee;
-  border-radius: 6px;
-}
 
 li.selected-guest .move-arrow {
   display: inline-block;
@@ -445,6 +438,18 @@ li.selected-guest .move-arrow {
 li.selected {
   outline: 2px solid #007bff;
   border-radius: 4px;
+}
+    
+.move-btn {
+  font-size: 20px;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: #2563eb;
+  border-radius: 6px;
+}
+
+.move-btn:hover {
+  background: #e0e7ff;
 }
 
   </style>
@@ -766,7 +771,7 @@ function applyInteractionMode() {
 
 <script>
 /* =====================================================
-   MODULE 3 — GUEST MODEL
+   MODULE 3 — GUEST MODEL (V5.1 STABLE)
    ===================================================== */
 
 /* ---------- CREATE GUEST <li> ---------- */
@@ -783,21 +788,14 @@ function createGuestLi(name) {
   span.textContent = cleanName;
   li.appendChild(span);
 
-  /* Drag behavior */
-  li.draggable = !isAndroid;
+  /* Move button (Tap Mode uses this) */
+  const moveBtn = document.createElement("span");
+  moveBtn.className = "move-btn";
+  moveBtn.textContent = "↗";
+  li.appendChild(moveBtn);
 
-  /* Android-specific UI */
-  if (isAndroid) {
-    li.style.userSelect = "none";
-    li.style.webkitUserSelect = "none";
-    li.style.webkitUserDrag = "none";
-    li.style.touchAction = "manipulation";
-
-    const arrow = document.createElement("span");
-    arrow.className = "move-arrow";
-    arrow.textContent = "➡️";
-    li.appendChild(arrow);
-  }
+  /* Drag behavior (only active when in Drag Mode) */
+  li.draggable = true;
 
   return li;
 }
@@ -807,6 +805,7 @@ function getGuestName(li) {
   return normalizeName(li?.dataset?.name || "");
 }
 </script>
+
 
 <script>
 /* =====================================================
@@ -1744,61 +1743,22 @@ if (toggle) {
 }
 
 /* =====================================================
-   V5.1 — TAP MODE LOGIC (FIXED VERSION)
+   V5.1 — TAP MODE (ICON-BASED)
    ===================================================== */
 
-let selectedGuest = null;
-
-document.addEventListener("click", e => {
-  // Chỉ chạy khi đang ở Tap Mode
+tablesEl.addEventListener("click", e => {
   if (interactionMode !== "tap") return;
 
-  // Chỉ xử lý click trong khu vực bàn hoặc khách
-  const li = e.target.closest("li");
-  const table = e.target.closest(".table");
+  const moveBtn = e.target.closest(".move-btn");
+  if (!moveBtn) return;
 
-  // Nếu click KHÔNG nằm trong table hoặc li → bỏ qua hoàn toàn
-  if (!li && !table) return;
+  const li = moveBtn.closest("li");
+  if (!li) return;
 
-  /* -----------------------------------------------------
-     1) TAP KHÁCH
-     ----------------------------------------------------- */
-  if (li) {
-    // Nếu tap lại khách đang chọn → bỏ chọn
-    if (selectedGuest === li) {
-      li.classList.remove("selected");
-      selectedGuest = null;
-      return;
-    }
-
-    // Nếu đang chọn khách khác → bỏ chọn cũ
-    if (selectedGuest) {
-      selectedGuest.classList.remove("selected");
-    }
-
-    // Chọn khách mới
-    selectedGuest = li;
-    li.classList.add("selected");
-    return;
-  }
-
-  /* -----------------------------------------------------
-     2) TAP BÀN ĐỂ CHUYỂN KHÁCH
-     ----------------------------------------------------- */
-  if (table && selectedGuest) {
-    const list = table.querySelector(".guest-list");
-    list.appendChild(selectedGuest);
-
-    selectedGuest.classList.remove("selected");
-    selectedGuest = null;
-
-    updateTableView(table);
-    updateUnassignedView();
-    updateSummaryView();
-    saveState();
-    return;
-  }
+  // Mở modal chọn bàn
+  openMoveGuestModal(li);
 });
+
 
 </script>
 
