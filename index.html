@@ -801,7 +801,7 @@ let interactionMode = "drag"; // mặc định
 
 <script>
 /* =====================================================
-   MODULE 2 — HELPER & UTILS
+   MODULE 2 — HELPER & UTILS (V5.1 STABLE)
    ===================================================== */
 
 /* ---------- STRING UTILS ---------- */
@@ -824,13 +824,6 @@ function shortName(full) {
   return parts.slice(-2).join(" ");
 }
 
-/* ---------- GUEST SELECTION ---------- */
-function clearSelectedGuest() {
-  if (!selectedGuest) return;
-  selectedGuest.classList.remove("selected-guest");
-  selectedGuest = null;
-}
-
 /* ---------- SAFE TEXT UPDATE ---------- */
 function setGuestText(li, text) {
   const span = li.querySelector(".guest-name");
@@ -845,39 +838,43 @@ function qs(selector, root = document) {
 function qsa(selector, root = document) {
   return [...root.querySelectorAll(selector)];
 }
-  
+
 /* =====================================================
    V5.1 — Áp dụng Interaction Mode (Tap / Drag)
-   Hàm này chỉ thay đổi UI (class của body)
-   và được gọi sau khi loadState() hoặc khi user đổi mode
    ===================================================== */
 function applyInteractionMode() {
-  // Drag mode: bật draggable
+
+  /* ---------- DRAG MODE ---------- */
   if (interactionMode === "drag") {
     qsa(".guest-list li").forEach(li => {
       li.draggable = true;
+      li.style.pointerEvents = "auto";   // cho phép click bình thường
     });
   }
 
-  // Tap mode: tắt draggable
+  /* ---------- TAP MODE ---------- */
   if (interactionMode === "tap") {
     qsa(".guest-list li").forEach(li => {
       li.draggable = false;
+
+      // Quan trọng: li không nhận click → tránh Android nuốt click
+      li.style.pointerEvents = "none";
+
+      // Nhưng icon Move vẫn phải click được
+      const btn = li.querySelector(".move-btn");
+      if (btn) btn.style.pointerEvents = "auto";
     });
   }
 
-  /* =====================================================
-     V5.1 — Show/hide Move icon
-     ===================================================== */
+  /* ---------- Hiện/ẩn icon Move ---------- */
   qsa(".move-btn").forEach(btn => {
     if (interactionMode === "tap") {
-      btn.style.display = "inline-block";   // Tap Mode → hiện icon Move
+      btn.style.display = "inline-block";
     } else {
-      btn.style.display = "none";           // Drag Mode → ẩn icon Move
+      btn.style.display = "none";
     }
   });
 }
-
 
 </script>
 
