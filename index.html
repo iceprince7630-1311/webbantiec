@@ -848,7 +848,10 @@ function applyInteractionMode() {
   if (interactionMode === "drag") {
     qsa(".guest-list li").forEach(li => {
       li.draggable = true;
-      li.style.pointerEvents = "auto";   // cho phép click bình thường
+
+      // Cho phép click bình thường
+      li.onclick = null;
+      li.style.pointerEvents = "auto";
     });
   }
 
@@ -857,10 +860,11 @@ function applyInteractionMode() {
     qsa(".guest-list li").forEach(li => {
       li.draggable = false;
 
-      // Quan trọng: li không nhận click → tránh Android nuốt click
-      li.style.pointerEvents = "none";
+      // Quan trọng: KHÔNG tắt pointer-events
+      // Thay vào đó, chặn click lan ra ngoài
+      li.onclick = (e) => e.stopPropagation();
 
-      // Nhưng icon Move vẫn phải click được
+      // Icon Move vẫn click được
       const btn = li.querySelector(".move-btn");
       if (btn) btn.style.pointerEvents = "auto";
     });
@@ -868,13 +872,12 @@ function applyInteractionMode() {
 
   /* ---------- Hiện/ẩn icon Move ---------- */
   qsa(".move-btn").forEach(btn => {
-    if (interactionMode === "tap") {
-      btn.style.display = "inline-block";
-    } else {
-      btn.style.display = "none";
-    }
+    btn.style.display = (interactionMode === "tap")
+      ? "inline-block"
+      : "none";
   });
 }
+
 
 </script>
 
