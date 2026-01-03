@@ -327,9 +327,12 @@ body {
 }
 
 .unassigned-scroll::-webkit-scrollbar-thumb {
-  background-color: #ccc;
-  border-radius: 4px;
+  background-color: #bbb;
+  border-radius: 20px; /* bo tròn hơn */
+  border: 10px solid transparent; /* ⭐ tạo cảm giác dày hơn */
+  background-clip: content-box;
 }
+
 
 /* Tên khách trong Chưa sắp xếp co lại khi hẹp */
 #unassigned .guest-name {
