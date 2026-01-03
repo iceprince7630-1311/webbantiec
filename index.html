@@ -408,62 +408,6 @@ li.selected-guest .move-arrow {
   padding: 12px;
 }
 
-/* Android toggle */
-.android-only {
-  display: none;
-  gap: 6px;
-}
-
-.android-only {
-  display: flex;
-}
-
-#android-toggle .small {
-  padding: 6px 10px;
-  font-size: 13px;
-}
-
-#android-toggle .active {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
-}
-
-/* (PHASE 4) thêm Toast */
-.toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,.8);
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .3s ease;
-  z-index: 2000;
-}
-
-.toast.show {
-  opacity: 1;
-}
-
-body.android-tap .guest-list li {
-  padding: 12px 14px;
-}
-    
-.selected-guest {
-  background: #dbeafe !important;
-  border-color: #2563eb !important;
-}
-    
-body.android-drag .touch-dragging {
-  background: #e0f2fe;
-  border: 1px solid #38bdf8;
-}
-
   </style>
   
 </head>
@@ -513,12 +457,6 @@ body.android-drag .touch-dragging {
       </div>
 
       <button id="help-btn" class="btn">❓ Hướng dẫn</button>
-
-      <!-- ANDROID MODE TOGGLE -->
-      <div id="android-toggle" class="android-only">
-        <button data-mode="tap" class="btn small active">📱 Tap</button>
-        <button data-mode="drag" class="btn small">🖐 Drag</button>
-      </div>
 
       <!-- SUMMARY -->
       <div id="summary">
@@ -657,7 +595,6 @@ body.android-drag .touch-dragging {
 <!-- ROOT IN PDF -->
 <div id="print-root"></div>
 
-<div id="toast" class="toast"></div>
 
 
   
@@ -692,19 +629,12 @@ let editNamesMode   = false;
 let deleteMode      = false;
 let selectedGuest   = null;
 
-/* ---------- ANDROID INTERACTION MODE ---------- */
-/*
-  tap  = chạm chọn khách → chạm bàn
-  drag = kéo thả (nâng cao)
-*/
-let androidInteractionMode = "tap";
-
 /* ---------- DRAG STATE ---------- */
 let draggedItem = null;
 const dragPlaceholder = document.createElement("li");
 dragPlaceholder.className = "drag-placeholder";
 </script>
-  
+
 <script>
 /* =====================================================
    MODULE 2 — HELPER & UTILS
@@ -999,8 +929,7 @@ if (isTouch && !isAndroid) {
     const li = e.target.closest(".guest-list li");
     if (!li) return;
 
-timer = setTimeout(() => {
-      if (androidInteractionMode !== "drag") return;
+    timer = setTimeout(() => {
       touchItem = li;
       const r = li.getBoundingClientRect();
       touchClone = li.cloneNode(true);
@@ -1014,40 +943,23 @@ timer = setTimeout(() => {
   }, { passive: false });
 
   document.addEventListener("touchmove", e => {
-  if (timer) { 
-    clearTimeout(timer); 
-    timer = null; 
-  }
-  if (!touchItem || !touchClone) return;
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (!touchItem || !touchClone) return;
+    e.preventDefault();
 
-  e.preventDefault();
+    const t = e.touches[0];
+    touchClone.style.left = t.clientX - touchClone.offsetWidth / 2 + "px";
+    touchClone.style.top  = t.clientY - touchClone.offsetHeight / 2 + "px";
 
-  const t = e.touches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const list = el?.closest(".guest-list");
+    if (!list) return;
 
-  const dx = t.clientX - startX;
-  const dy = t.clientY - startY;
-
-  /* =====================================================
-     PHASE 4 — THRESHOLD TRÁNH KÉO NHẦM KHI SCROLL
-     ===================================================== */
-  if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-
-  /* =====================================================
-     TIẾP TỤC DRAG NHƯ CŨ
-     ===================================================== */
-  touchClone.style.left = t.clientX - touchClone.offsetWidth / 2 + "px";
-  touchClone.style.top  = t.clientY - touchClone.offsetHeight / 2 + "px";
-
-  const el = document.elementFromPoint(t.clientX, t.clientY);
-  const list = el?.closest(".guest-list");
-  if (!list) return;
-
-  const after = getDragAfterElement(list, t.clientY);
-  after
-    ? list.insertBefore(dragPlaceholder, after)
-    : list.appendChild(dragPlaceholder);
-}, { passive: false });
-
+    const after = getDragAfterElement(list, t.clientY);
+    after
+      ? list.insertBefore(dragPlaceholder, after)
+      : list.appendChild(dragPlaceholder);
+  }, { passive: false });
 
   document.addEventListener("touchend", () => {
     if (!touchItem) return;
@@ -1064,23 +976,14 @@ timer = setTimeout(() => {
   });
 }
 
-/* =====================================================
-   ANDROID TAP MODE (PHASE 3 + PHASE 4.2)
-   ===================================================== */
-
-/* ---------- TAP CHỌN KHÁCH ---------- */
+/* ---------- ANDROID TAP MODE ---------- */
 document.addEventListener("click", e => {
-  if (!isAndroid || androidInteractionMode !== "tap") return;
-
-  // Phase 4.2 — tránh tap bị hiểu thành scroll
-  e.preventDefault();
-  e.stopPropagation();
+  if (!isAndroid) return;
 
   const li = e.target.closest(".guest-list li");
   if (!li) return;
   if (deleteMode || editNamesMode) return;
 
-  // Nếu tap vào mũi tên (move-arrow)
   if (e.target.classList.contains("move-arrow")) {
     selectedGuest = li;
     li.classList.add("selected-guest");
@@ -1088,33 +991,26 @@ document.addEventListener("click", e => {
     return;
   }
 
-  // Nếu tap lại chính khách đang chọn → bỏ chọn
   if (selectedGuest === li) {
     clearSelectedGuest();
     return;
   }
 
-  // Chọn khách mới
   clearSelectedGuest();
   selectedGuest = li;
   li.classList.add("selected-guest");
 });
 
-
-/* ---------- TAP BÀN ĐỂ CHUYỂN KHÁCH ---------- */
+/* Android: tap bàn để chuyển khách */
 tablesEl.addEventListener("click", e => {
-  if (!isAndroid || androidInteractionMode !== "tap") return;
-
-  // Phase 4.2 — tránh tap bị hiểu thành scroll
-  e.preventDefault();
-  e.stopPropagation();
+  if (!isAndroid) return;
 
   const table = e.target.closest(".table");
   if (!table || !selectedGuest) return;
   if (editNamesMode || deleteMode) return;
 
-  const list  = table.querySelector(".guest-list");
-  const max   = getTableMax(table);
+  const list = table.querySelector(".guest-list");
+  const max  = getTableMax(table);
   const count = qsa("li:not(.drag-placeholder)", list).length;
 
   if (count >= max) {
@@ -1129,22 +1025,16 @@ tablesEl.addEventListener("click", e => {
   updateUnassignedView();
 });
 
-
-/* ---------- ANDROID: CHẶN DRAG MẶC ĐỊNH ---------- */
+/* Android: chặn drag mặc định */
 if (isAndroid) {
   document.addEventListener("touchstart", e => {
     const li = e.target.closest("li");
     if (!li || editNamesMode) return;
-
-    // Tắt drag khi đang ở TAP MODE
-    if (androidInteractionMode === "tap") {
-      li.draggable = false;
-      li.style.userSelect = "none";
-      li.style.touchAction = "manipulation";
-    }
+    li.draggable = false;
+    li.style.userSelect = "none";
+    li.style.touchAction = "manipulation";
   }, { passive: true });
 }
-
 </script>
 
 <script>
@@ -1290,17 +1180,15 @@ const STORAGE_KEY = "wedding_state";
 /* ---------- SAVE ---------- */
 function saveState() {
   const state = {
-  tables: qsa(".table").map(t => ({
-    name: t.dataset.baseName,
-    max:  t.dataset.max,
-    guests: qsa("li:not(.drag-placeholder)", t.querySelector(".guest-list"))
+    tables: qsa(".table").map(t => ({
+      name: t.dataset.baseName,
+      max:  t.dataset.max,
+      guests: qsa("li:not(.drag-placeholder)", t.querySelector(".guest-list"))
+        .map(li => li.dataset.name)
+    })),
+    unassigned: qsa("li:not(.drag-placeholder)", unassigned)
       .map(li => li.dataset.name)
-  })),
-  unassigned: qsa("li:not(.drag-placeholder)", unassigned)
-    .map(li => li.dataset.name),
-
-  androidMode: isAndroid ? androidInteractionMode : null
-};
+  };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
@@ -1331,24 +1219,15 @@ function loadState() {
     return;
   }
 
-  /* ---------- LOAD TABLES ---------- */
   state.tables.forEach(t =>
     createTable(t.name, t.max, t.guests || [])
   );
 
-  /* ---------- LOAD UNASSIGNED ---------- */
   (state.unassigned || []).forEach(name => {
     const li = createGuestLi(name);
     if (li) unassigned.appendChild(li);
   });
 
-  /* ---------- LOAD ANDROID MODE (PHASE 1) ---------- */
-  if (isAndroid && state.androidMode) {
-    androidInteractionMode = state.androidMode;
-  }
-  applyAndroidMode(); /* (PHASE 3) */
-
-  /* ---------- FINAL UPDATE ---------- */
   qsa(".table").forEach(updateTableView);
   updateUnassignedView();
 }
@@ -1746,120 +1625,6 @@ qs("#add-guest").onclick = () => {
   updateSummaryView();
   saveState();
 };
-
-/* =====================================================
-   ANDROID MODE TOGGLE (PHASE 2 + PHASE 4.1 + LOG TEST)
-   ===================================================== */
-
-if (isAndroid) {
-  console.log("[ANDROID] Detected Android device");
-  document.body.classList.add("android");
-
-  const toggle = document.getElementById("android-toggle");
-  const buttons = toggle.querySelectorAll("button");
-
-  console.log("[ANDROID] Toggle element:", toggle);
-  console.log("[ANDROID] Buttons found:", buttons.length);
-
-  // Khôi phục trạng thái từ Phase 1
-  buttons.forEach(btn => {
-    if (btn.dataset.mode === androidInteractionMode) {
-      btn.classList.add("active");
-    } else {
-      btn.classList.remove("active");
-    }
-  });
-
-  console.log("[ANDROID] Initial mode:", androidInteractionMode);
-
-  // Gắn sự kiện toggle
-  buttons.forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-
-      const mode = btn.dataset.mode;
-
-      console.log("====================================");
-      console.log("[TOGGLE CLICKED]");
-      console.log("Button:", mode);
-      console.log("Old mode:", androidInteractionMode);
-
-      // Đổi mode
-      androidInteractionMode = mode;
-      console.log("New mode:", androidInteractionMode);
-
-      // Lưu state
-      console.log("[SAVE] Calling saveState()");
-      saveState();
-
-      // Áp dụng mode
-      console.log("[APPLY] Calling applyAndroidMode()");
-      applyAndroidMode();
-
-      // Cập nhật nút active
-      buttons.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      console.log("[UI] Active button updated");
-
-      // 🔔 PHASE 4.1 — TOAST HINT
-      if (mode === "tap") {
-        console.log("[TOAST] Showing TAP hint");
-        showToast("Chạm khách → chạm bàn để chuyển");
-      } else {
-        console.log("[TOAST] Showing DRAG hint");
-        showToast("Giữ và kéo để di chuyển khách");
-      }
-
-      console.log("====================================");
-    });
-  });
-}
-
-  
-/* =====================================================
-   ANDROID MODE BEHAVIOR SWITCH (PHASE 3)
-   ===================================================== */
-
-function applyAndroidMode() {
-  if (!isAndroid) return;
-
-  // Reset trạng thái
-  clearSelectedGuest();
-  dragPlaceholder.remove();
-  draggedItem = null;
-
-  const allGuests = qsa(".guest-list li");
-
-  if (androidInteractionMode === "tap") {
-    // Tắt drag
-    allGuests.forEach(li => {
-      li.draggable = false;
-      li.style.touchAction = "manipulation";
-    });
-
-    // Bật tap-to-move
-    document.body.classList.add("android-tap");
-    document.body.classList.remove("android-drag");
-
-  } else {
-    // Bật drag
-    allGuests.forEach(li => {
-      li.draggable = true;
-      li.style.touchAction = "none";
-    });
-
-    // Tắt tap-to-move
-    document.body.classList.add("android-drag");
-    document.body.classList.remove("android-tap");
-  }
-}
-
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2000);
-}
 
 </script>
 
