@@ -684,46 +684,44 @@ body.edit-names-mode .selected-guest {
 
 
 /* ===== Khi màn hình hẹp: chia 2 hàng ===== */
+/* ===== Khi màn hình hẹp: chia 2 hàng ===== */
 @media (max-width: 480px) {
 
-  /* Flex wrap cho đúng selector */
-  #unassigned .guest-list li {
+  #unassigned li {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-start !important;
+    justify-content: flex-start;
     align-items: flex-start;
     gap: 6px;
     min-width: 0;
   }
 
   /* Hàng 1: số thứ tự */
-  #unassigned .guest-list li::before {
+  #unassigned li::before {
     order: 1;
-    flex-shrink: 0;
     display: inline-flex;
+    flex-shrink: 0;
   }
 
   /* Hàng 1: move */
-  #unassigned .guest-list li .move-btn {
+  #unassigned li .move-btn {
     order: 2;
     flex-shrink: 0;
   }
 
-  /* Hàng 1: delete */
-  #unassigned .guest-list li .delete-x {
-    order: 3;
-    flex-shrink: 0;
-  }
-
   /* Hàng 2: tên khách */
-  #unassigned .guest-list li .guest-name {
-    order: 4;
-    flex: unset !important;
-    width: 100% !important;
+  #unassigned li .guest-name {
+    order: 3;
+    flex: unset;
+    width: 100%;
     margin-top: 4px;
-    white-space: normal !important;
+    white-space: normal;
     word-break: break-word;
   }
+}
+
+#unassigned {
+  display: block !important;
 }
 
 
