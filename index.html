@@ -519,6 +519,34 @@ li.selected-guest .move-arrow {
   margin-bottom: 6px;
 }
 
+.move-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.move-column h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.move-column .btn {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+/* Nút Chưa sắp xếp */
+.unassigned-btn {
+  background: #dbeafe; /* xanh dương nhạt */
+  border-color: #93c5fd;
+}
+
+/* Nút bị vô hiệu hóa */
+.btn.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
   </style>
   
 </head>
@@ -701,6 +729,8 @@ li.selected-guest .move-arrow {
   </div>
 </div>
 
+  
+<!-- MOVE MODAL -->
 <div id="move-modal" class="modal">
   <div class="modal-content">
     <h3>Di chuyển khách</h3>
@@ -708,23 +738,27 @@ li.selected-guest .move-arrow {
     <div class="move-grid">
       <!-- Cột trái: Di chuyển trong bàn -->
       <div class="move-column">
-        <h4>Di chuyển trong bàn</h4>
+        <h4>Trong bàn:</h4>
         <button class="btn move-top">⬆ Lên đầu</button>
-        <button class="btn move-up">🔼 Lên 1 vị trí</button>
-        <button class="btn move-down">🔽 Xuống 1 vị trí</button>
+
+        <!-- Chỉ icon -->
+        <button class="btn move-up">🔼</button>
+        <button class="btn move-down">🔽</button>
+
         <button class="btn move-bottom">⬇ Xuống cuối</button>
       </div>
 
       <!-- Cột phải: Di chuyển sang bàn khác -->
       <div class="move-column">
-        <h4>Chuyển sang bàn khác</h4>
+        <h4>Bàn khác:</h4>
         <div id="move-list"></div>
       </div>
     </div>
 
-    <button id="move-cancel" class="btn" style="margin-top:10px;width:100%">Đóng</button>
+    <button id="move-cancel" class="btn move-close" style="margin-top:10px;width:100%">Đóng</button>
   </div>
 </div>
+
 
 
 <!-- ROOT IN PDF -->
@@ -1677,6 +1711,7 @@ qs("#max-save").onclick = () => {
   maxModal.style.display = "none";
 };
 
+  
 /* ---------- MOVE GUEST MODAL (V5.1 FULL VERSION) ---------- */
 function openMoveGuestModal(li) {
   const currentList = li.parentElement;
@@ -1692,7 +1727,8 @@ function openMoveGuestModal(li) {
   };
 
   // Lên 1 vị trí
-  qs(".move-up").onclick = () => {
+  const btnUp = qs(".move-up");
+  btnUp.onclick = () => {
     if (index > 0) {
       currentList.insertBefore(li, siblings[index - 1]);
       finalizeMove();
@@ -1700,7 +1736,8 @@ function openMoveGuestModal(li) {
   };
 
   // Xuống 1 vị trí
-  qs(".move-down").onclick = () => {
+  const btnDown = qs(".move-down");
+  btnDown.onclick = () => {
     if (index < siblings.length - 1) {
       currentList.insertBefore(li, siblings[index + 2] || null);
       finalizeMove();
@@ -1713,13 +1750,20 @@ function openMoveGuestModal(li) {
     finalizeMove();
   };
 
+  /* ====== 1.1 — Disable nút nếu ở đầu/cuối ====== */
+  if (index === 0) btnUp.classList.add("disabled");
+  else btnUp.classList.remove("disabled");
+
+  if (index === siblings.length - 1) btnDown.classList.add("disabled");
+  else btnDown.classList.remove("disabled");
+
   /* ====== 2) Tạo danh sách bàn khác ====== */
   const box = qs("#move-list");
   box.innerHTML = "";
 
   // Thêm mục "Chưa sắp xếp"
   const unBtn = document.createElement("button");
-  unBtn.className = "btn";
+  unBtn.className = "btn unassigned-btn";
   unBtn.textContent = "Chưa sắp xếp";
   unBtn.onclick = () => {
     unassigned.appendChild(li);
@@ -1749,7 +1793,12 @@ function openMoveGuestModal(li) {
   /* ====== 3) Hiển thị modal ====== */
   qs("#move-modal").style.display = "flex";
 
-  /* ====== 4) Hàm cập nhật sau khi di chuyển ====== */
+  /* ====== 4) Nút đóng ====== */
+  qs("#move-cancel").onclick = () => {
+    qs("#move-modal").style.display = "none";
+  };
+
+  /* ====== 5) Hàm cập nhật sau khi di chuyển ====== */
   function finalizeMove() {
     qs("#move-modal").style.display = "none";
     qsa(".table").forEach(updateTableView);
@@ -1758,6 +1807,8 @@ function openMoveGuestModal(li) {
     saveState();
   }
 }
+
+  
 
 
 /* ---------- TABLE ACTIONS ---------- */
