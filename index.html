@@ -539,47 +539,58 @@ li.selected-guest .move-arrow {
    EDIT NAME MODE — UI LOCKDOWN
    ===================================================== */
 
+/* Mặc định: mọi nút dùng .btn bị mờ + khóa */
 body.edit-names-mode .btn {
   opacity: 0.3;
   pointer-events: none;
 }
 
+/* Chỉ Đồng ý / Hủy được bấm và sáng */
 body.edit-names-mode #edit-names-save,
 body.edit-names-mode #edit-names-cancel {
   opacity: 1;
   pointer-events: auto;
 }
 
+/* Nút Sửa tên khách (nếu hiện) vẫn sáng, nhưng JS sẽ ẩn nó trong edit mode */
 body.edit-names-mode #edit-names-btn {
   opacity: 1;
   pointer-events: auto;
 }
 
+/* Nút Thêm bàn (+) KHÔNG dùng class .btn nên phải khóa riêng */
 body.edit-names-mode #add-table {
   opacity: 0.3;
   pointer-events: none;
 }
 
+/* Các nút trong header bàn: sửa tên bàn, xóa bàn, quick-add
+   → DÙ có hay không có class .btn đều bị khóa */
+body.edit-names-mode .table-actions button,
 body.edit-names-mode .table-actions .btn {
   opacity: 0.3;
   pointer-events: none;
 }
 
+/* Nút + thêm khách nhanh trong bàn (nếu là .quick-add-btn riêng) */
 body.edit-names-mode .quick-add-btn {
   opacity: 0.3;
   pointer-events: none;
 }
 
+/* Ô input quick-add (nếu đang mở) cũng bị khóa */
 body.edit-names-mode .quick-add-input {
   opacity: 0.3;
   pointer-events: none;
 }
 
+/* Nút move (Tap mode) chắc chắn bị mờ + không bấm được */
 body.edit-names-mode .move-btn {
   opacity: 0.25;
   pointer-events: none;
 }
 
+/* Nếu trước đây có trạng thái selected-guest thì xóa luôn khi sửa tên */
 body.edit-names-mode .selected-guest {
   background: none !important;
 }
