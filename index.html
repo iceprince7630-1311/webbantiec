@@ -232,6 +232,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
 }
 
 .guest-list li:not(.drag-placeholder)::before {
@@ -245,6 +246,10 @@ body {
 
 .guest-name {
   flex: 1;
+}
+    
+#unassigned li {
+  min-width: 0;
 }
 
 /* =====================================================
